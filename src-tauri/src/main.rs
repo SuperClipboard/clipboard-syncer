@@ -8,10 +8,11 @@ use crate::tray::register_tray;
 
 mod config;
 mod logger;
-mod model;
+mod models;
 mod storage;
 mod tray;
 mod utils;
+mod schema;
 
 fn main() {
     dotenv().ok();
