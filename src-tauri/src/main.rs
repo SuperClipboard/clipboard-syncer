@@ -3,22 +3,33 @@
 
 use dotenv::dotenv;
 use log::info;
+use tauri::{App, Manager};
 
+use crate::listener::clipboard::ClipboardListener;
 use crate::tray::register_tray;
 
 mod config;
+mod consts;
+mod dao;
+mod handler;
+mod listener;
 mod logger;
 mod models;
+mod schema;
 mod storage;
 mod tray;
 mod utils;
-mod schema;
 
 fn main() {
     dotenv().ok();
     logger::init();
 
-    let app = tauri::Builder::default();
+    // Step 0: Create and setup application
+    let app = tauri::Builder::default()
+        .setup(|app| {
+            setup(app);
+            Ok(())
+        });
 
     // Step 1: register system tray
     let app = register_tray(app);
@@ -39,4 +50,15 @@ fn main() {
         }
         _ => {}
     });
+}
+
+fn setup(app: &mut App) {
+    // Make the docker NOT to have an active app when started
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+
+    // Save application handler
+    handler::global_handler::GlobalHandler::global().init(app.app_handle());
+
+    // Start listening for clipboard
+    ClipboardListener::listen();
 }

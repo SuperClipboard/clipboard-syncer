@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::config::LOG_LEVEL;
+use crate::consts::LOG_LEVEL;
 use log::{Level, LevelFilter, Metadata, Record};
 
 struct Logger;

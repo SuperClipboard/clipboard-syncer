@@ -8,7 +8,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use lazy_static::lazy_static;
 use log::info;
 
-use crate::utils::dirs::app_data_dir;
+use crate::utils::dir::app_data_dir;
 
 const SQLITE_FILE: &str = "clipboard-syncer.sqlite";
 
@@ -29,7 +29,7 @@ impl SqliteDB {
     pub fn new() -> Self {
         let data_dir = app_data_dir().unwrap().join(SQLITE_FILE);
         let db_uri = format!("sqlite://{}", data_dir.to_str().unwrap());
-        let mut c = SqliteConnection::establish(&db_uri)
+        let c = SqliteConnection::establish(&db_uri)
             .unwrap_or_else(|_| panic!("Error connecting to {:?}", db_uri));
         SqliteDB { conn: c }
     }
@@ -48,7 +48,8 @@ impl SqliteDB {
             .unwrap_or_else(|_| panic!("Error connecting to {:?}", db_uri));
 
         // This will run the necessary migrations.
-        c.run_pending_migrations(MIGRATIONS).unwrap_or_else(|_| panic!("Error running migration"));
+        c.run_pending_migrations(MIGRATIONS)
+            .unwrap_or_else(|_| panic!("Error running migration"));
 
         info!("Database migration success!");
     }
@@ -75,9 +76,7 @@ impl SqliteDB {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
-    fn test_build() {
-    }
+    fn test_build() {}
 }

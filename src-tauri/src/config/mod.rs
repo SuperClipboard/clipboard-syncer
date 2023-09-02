@@ -1,2 +1,2 @@
-/// Logger level
-pub static LOG_LEVEL: &str = "LOG_LEVEL";
+pub mod app_config;
+pub mod configure;
