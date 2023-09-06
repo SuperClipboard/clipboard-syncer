@@ -6,6 +6,7 @@ use log::info;
 use tauri::{App, Manager};
 
 use crate::listener::clipboard::ClipboardListener;
+use crate::listener::global_event_listener::GlobalEventListener;
 use crate::tray::register_tray;
 
 mod config;
@@ -54,10 +55,14 @@ fn main() {
 
 fn setup(app: &mut App) {
     // Make the docker NOT to have an active app when started
+    #[cfg(target_os = "macos")]
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
     // Save application handler
     handler::global_handler::GlobalHandler::global().init(app.app_handle());
+
+    // Start global application listener
+    GlobalEventListener::register_all_global_listeners(app).unwrap();
 
     // Start listening for clipboard
     ClipboardListener::listen();

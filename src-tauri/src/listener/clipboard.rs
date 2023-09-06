@@ -6,7 +6,7 @@ use log::{error, info};
 
 use crate::config::app_config::AppConfig;
 use crate::dao::record_dao::RecordDao;
-use crate::handler::{global_handler, MessageTypeEnum};
+use crate::handler::global_handler::{GlobalHandler, MessageTypeEnum};
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::Record;
@@ -109,7 +109,7 @@ impl ClipboardListener {
                     }
                 }
                 if need_notify {
-                    global_handler::GlobalHandler::push_message_to_window(
+                    GlobalHandler::push_message_to_window(
                         MessageTypeEnum::ChangeClipBoard,
                         "ok",
                     )

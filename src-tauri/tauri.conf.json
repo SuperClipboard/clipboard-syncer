@@ -54,6 +54,13 @@
       "active": false
     },
     "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "clipboard-syncer",
+        "width": 400
+      }
     ],
     "systemTray": {
       "iconAsTemplate": true,

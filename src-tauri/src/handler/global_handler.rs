@@ -8,7 +8,10 @@ use parking_lot::Mutex;
 use serde::Serialize;
 use tauri::AppHandle;
 
-use crate::handler::MessageTypeEnum;
+#[derive(Debug)]
+pub enum MessageTypeEnum {
+    ChangeClipBoard,
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct GlobalHandler {

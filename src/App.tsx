@@ -1,12 +1,14 @@
 import React from 'react';
 import '@/css/App.css';
-import {Button} from "antd";
+import RecordCard from "@/components/RecordCard";
+import {temp_image, temp_text} from "@/models/Record";
 
 function App() {
     return (
         <div className="App">
-            hello
-            <Button type={"primary"}></Button>
+            {/*<RecordList />*/}
+            <RecordCard data={temp_text}/>
+            <RecordCard data={temp_image}/>
         </div>
     );
 }
