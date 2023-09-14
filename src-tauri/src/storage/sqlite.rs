@@ -32,7 +32,6 @@ impl Default for SqliteDB {
     }
 }
 
-
 impl SqliteDB {
     pub fn new() -> Self {
         let data_dir = app_data_dir().unwrap().join(SQLITE_FILE);

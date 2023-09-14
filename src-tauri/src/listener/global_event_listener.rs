@@ -24,10 +24,13 @@ impl GlobalEventListener {
 
     fn change_clipboard_listener(app: &mut App) -> Result<()> {
         app.listen_global(EventListenTypeEnum::ChangeClipBoard, |e| {
-            println!("got {:?} with payload {:?}", EventListenTypeEnum::ChangeClipBoard, e.payload());
+            println!(
+                "got {:?} with payload {:?}",
+                EventListenTypeEnum::ChangeClipBoard,
+                e.payload()
+            );
         });
 
         Ok(())
     }
 }
-

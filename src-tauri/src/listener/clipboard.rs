@@ -109,20 +109,26 @@ impl ClipboardListener {
                     }
                 }
                 if need_notify {
-                    GlobalHandler::push_message_to_window(
-                        MessageTypeEnum::ChangeClipBoard,
-                        "ok",
-                    )
-                    .unwrap();
+                    GlobalHandler::push_message_to_window(MessageTypeEnum::ChangeClipBoard, "ok")
+                        .unwrap();
                 }
                 thread::sleep(Duration::milliseconds(Self::WAIT_MILLIS).to_std().unwrap());
             }
         });
     }
 
-    fn handle_text_message() {}
+    #[allow(dead_code)]
+    fn handle_text_message() {
+        todo!()
+    }
 
-    fn handle_image_message() {}
+    #[allow(dead_code)]
+    fn handle_image_message() {
+        todo!()
+    }
 
-    fn handle_record_limit() {}
+    #[allow(dead_code)]
+    fn handle_record_limit() {
+        todo!()
+    }
 }
