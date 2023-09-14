@@ -52,6 +52,6 @@ mod tests {
     fn test_select_all() {
         let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
         let res = t_record.get_results::<Record>(c);
-        println!("{:?}", res);
+        println!("{:#?}", res);
     }
 }

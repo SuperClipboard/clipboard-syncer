@@ -1,10 +1,12 @@
 use std::hash::{Hash, Hasher};
 
+use diesel::Queryable;
 use serde::{Deserialize, Serialize};
 
 use crate::sync_proto::SyncData;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Queryable)]
+#[diesel(table_name = crate::schema::t_record)]
 pub struct RecordCache {
     pub md5: String,
     pub create_time: i32,
@@ -80,5 +82,27 @@ mod test {
             }
             .hash(&mut hasher2)
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use diesel::{QueryDsl, RunQueryDsl};
+
+    use crate::schema::t_record::dsl::t_record;
+    use crate::schema::t_record::{create_time, md5};
+    use crate::storage::sqlite::SQLITE_CLIENT;
+
+    use super::*;
+
+    #[test]
+    fn test_select_all() {
+        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+
+        let res = t_record
+            .select((md5, create_time))
+            .load::<RecordCache>(c)
+            .unwrap();
+        println!("{:#?}", res);
     }
 }

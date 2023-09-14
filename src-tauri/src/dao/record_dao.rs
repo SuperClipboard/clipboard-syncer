@@ -1,3 +1,4 @@
+use crate::consts::RECORD_LIMIT_THRESHOLD;
 use anyhow::Result;
 use diesel::associations::HasTable;
 use diesel::dsl::count_star;
@@ -13,10 +14,8 @@ use crate::utils::string;
 pub struct RecordDao;
 
 impl RecordDao {
-    const RECORD_LIMIT_THRESHOLD: usize = 50;
-
     pub fn insert_if_not_exist(mut r: Record) -> Result<()> {
-        let now = chrono::Local::now().timestamp_millis() as i32;
+        let now = chrono::Local::now().timestamp() as i32;
         let mo5_str = string::md5(r.content.as_str());
         r.md5 = mo5_str.clone();
         r.create_time = now;
@@ -57,7 +56,7 @@ impl RecordDao {
             .get_result::<i64>(c)? as usize;
 
         // Not reach the threshold
-        if cnt < Self::RECORD_LIMIT_THRESHOLD + limit {
+        if cnt < RECORD_LIMIT_THRESHOLD + limit {
             return Ok(false);
         }
 
@@ -91,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_insert_if_not_exist() {
-        let now = chrono::Local::now().timestamp_millis() as i32;
+        let now = chrono::Local::now().timestamp() as i32;
         RecordDao::insert_if_not_exist(Record {
             content: "abc".to_string(),
             content_preview: Some("abc".to_string()),

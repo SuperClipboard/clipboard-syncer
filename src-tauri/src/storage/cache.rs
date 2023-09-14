@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
+use crate::consts::RECORD_LIMIT_THRESHOLD;
+use crate::dao::record_cache_dao::RecordCacheDao;
 use crate::models::record_cache::RecordCache;
-use log::info;
+use log::{error, info};
 use parking_lot::Mutex;
 
 #[derive(Debug)]
@@ -19,7 +21,13 @@ impl CacheHandler {
     }
 
     fn new() -> Self {
-        let d = HashSet::new();
+        let d = match RecordCacheDao::list_all_record_caches_with_limit(RECORD_LIMIT_THRESHOLD) {
+            Ok(data) => data,
+            Err(e) => {
+                error!("Load local cache failed: {:?}", e);
+                HashSet::new()
+            }
+        };
 
         info!("load data success: {:#?}", d);
 
