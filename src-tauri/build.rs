@@ -15,7 +15,8 @@ fn build_proto() {
     tonic_build::configure()
         .build_server(true)
         .out_dir(OUT_DIR)
-        .compile(&protos, &["proto/"]).unwrap();
+        .compile(&protos, &["proto/"])
+        .unwrap();
 
     rerun(&protos);
 }

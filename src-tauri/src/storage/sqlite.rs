@@ -25,6 +25,13 @@ pub struct SqliteDB {
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
+impl Default for SqliteDB {
+    fn default() -> Self {
+        Self::init();
+        Self::new()
+    }
+}
+
 impl SqliteDB {
     pub fn new() -> Self {
         let data_dir = app_data_dir().unwrap().join(SQLITE_FILE);
@@ -76,7 +83,6 @@ impl SqliteDB {
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn test_build() {}
 }
