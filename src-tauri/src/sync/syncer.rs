@@ -147,7 +147,7 @@ impl Syncer {
         };
 
         let mut store = CacheHandler::global().lock();
-        store.merge_data(&mut data.into_iter().collect());
+        store.merge_data(&data.into_iter().map(|item| item.into()).collect());
     }
 
     async fn get_client(addr: &str) -> Result<SyncSvcClient<Channel>, Error> {

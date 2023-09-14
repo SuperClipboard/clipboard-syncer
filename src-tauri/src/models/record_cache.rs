@@ -1,7 +1,8 @@
 use std::hash::{Hash, Hasher};
 
-use crate::sync_proto::SyncData;
 use serde::{Deserialize, Serialize};
+
+use crate::sync_proto::SyncData;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RecordCache {
@@ -9,11 +10,11 @@ pub struct RecordCache {
     pub create_time: i32,
 }
 
-impl Into<SyncData> for RecordCache {
-    fn into(self) -> SyncData {
+impl From<RecordCache> for SyncData {
+    fn from(val: RecordCache) -> Self {
         SyncData {
-            md5: self.md5,
-            create_time: self.create_time,
+            md5: val.md5,
+            create_time: val.create_time,
         }
     }
 }
@@ -43,9 +44,10 @@ impl PartialEq<Self> for RecordCache {
 
 #[cfg(test)]
 mod test {
-    use crate::models::record_cache::RecordCache;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::Hash;
+
+    use crate::models::record_cache::RecordCache;
 
     #[test]
     fn test_eq() {

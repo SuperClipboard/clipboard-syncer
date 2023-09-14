@@ -1,12 +1,12 @@
 use std::string::ToString;
 
-use log::debug;
+use log::{debug, warn};
 use tonic::{Request, Response, Status};
 
 use crate::consts::PONG;
 use crate::storage::cache::CacheHandler;
 use crate::sync::syncer::{SyncOptEnum, Syncer};
-use crate::sync_proto::sync_svc_server::{SyncSvc};
+use crate::sync_proto::sync_svc_server::SyncSvc;
 use crate::sync_proto::{
     AddRequest, AddResponse, ListRequest, ListResponse, PingRequest, PingResponse, RegisterRequest,
     RegisterResponse, RemoveRequest, RemoveResponse,
@@ -26,22 +26,32 @@ impl SyncSvc for SyncService {
     async fn list(&self, _req: Request<ListRequest>) -> Result<Response<ListResponse>, Status> {
         let store = CacheHandler::global().lock();
         Ok(Response::new(ListResponse {
-            data: store.get_copy_data().into_iter().collect(),
+            data: store
+                .get_copy_data()
+                .into_iter()
+                .map(|item| item.into())
+                .collect(),
         }))
     }
 
     async fn add(&self, req: Request<AddRequest>) -> Result<Response<AddResponse>, Status> {
-        let key = req.into_inner().key;
+        let data = match req.into_inner().data {
+            None => {
+                warn!("Add request is empty!");
+                return Err(Status::invalid_argument("Request is empty"));
+            }
+            Some(data) => data,
+        };
 
         let mut store = CacheHandler::global().lock();
-        if store.contains(&key) {
-            debug!("Already contains data: {}, skip...", key);
+        if store.contains(&data.clone().into()) {
+            debug!("Already contains data: {:?}, skip...", data);
             return Ok(Response::new(AddResponse {}));
         }
 
-        debug!("add store: {}, success", key);
-        store.add(key.clone());
-        Syncer::sync_opt(SyncOptEnum::Add, key);
+        debug!("add store: {:?}, success", data);
+        store.add(data.clone().into());
+        Syncer::sync_opt(SyncOptEnum::Add, data.into());
         Ok(Response::new(AddResponse {}))
     }
 
@@ -49,17 +59,23 @@ impl SyncSvc for SyncService {
         &self,
         req: Request<RemoveRequest>,
     ) -> Result<Response<RemoveResponse>, Status> {
-        let k = req.into_inner().key;
+        let data = match req.into_inner().data {
+            None => {
+                warn!("Remove request is empty!");
+                return Err(Status::invalid_argument("Request is empty"));
+            }
+            Some(data) => data,
+        };
 
         let mut store = CacheHandler::global().lock();
-        if !store.contains(&k) {
-            debug!("Not contains data: {}, skip...", k);
+        if !store.contains(&data.clone().into()) {
+            debug!("Not contains data: {:?}, skip...", data);
             return Ok(Response::new(RemoveResponse {}));
         }
 
-        debug!("remove store: {}, success", k);
-        store.remove(&k);
-        Syncer::sync_opt(SyncOptEnum::Remove, k);
+        debug!("remove store: {:?}, success", data);
+        store.remove(&data.clone().into());
+        Syncer::sync_opt(SyncOptEnum::Remove, data.into());
         Ok(Response::new(RemoveResponse {}))
     }
 
@@ -71,7 +87,11 @@ impl SyncSvc for SyncService {
         Syncer::add_client(connect_addr).await;
         let store = CacheHandler::global().lock();
         Ok(Response::new(RegisterResponse {
-            data: store.get_copy_data().into_iter().collect(),
+            data: store
+                .get_copy_data()
+                .into_iter()
+                .map(|item| item.into())
+                .collect(),
         }))
     }
 }
