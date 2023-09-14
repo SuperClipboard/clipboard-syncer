@@ -9,7 +9,7 @@ async fn main() -> anyhow::Result<()> {
 
     cli.add(AddRequest {
         data: Option::from(SyncData {
-            md5: "tester33333".to_string(),
+            md5: "tester".to_string(),
             create_time: chrono::Local::now().timestamp() as i32,
         }),
     })

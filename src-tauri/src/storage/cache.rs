@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
+use log::{error, info};
+use parking_lot::Mutex;
+
 use crate::consts::RECORD_LIMIT_THRESHOLD;
 use crate::dao::record_cache_dao::RecordCacheDao;
 use crate::models::record_cache::RecordCache;
-use log::{error, info};
-use parking_lot::Mutex;
 
 #[derive(Debug)]
 pub struct CacheHandler {
@@ -29,17 +30,35 @@ impl CacheHandler {
             }
         };
 
-        info!("load data success: {:#?}", d);
+        info!("load data success, size: {:#?}", d.len());
 
         Self { data: d }
     }
 
     pub fn contains(&self, k: &RecordCache) -> bool {
-        self.data.contains(k)
+        match self.data.get(k) {
+            None => false,
+            Some(inner_data) => inner_data.create_time.ge(&k.create_time),
+        }
     }
 
-    pub fn add(&mut self, data: RecordCache) {
-        self.data.insert(data);
+    pub fn get(&self, other_md5: &str) -> Option<RecordCache> {
+        self.data
+            .get(&RecordCache {
+                md5: other_md5.to_string(),
+                create_time: -1,
+            })
+            .cloned()
+    }
+
+    pub fn add(&mut self, data: RecordCache) -> bool {
+        match self.contains(&data) {
+            true => false,
+            false => {
+                self.data.replace(data);
+                true
+            }
+        }
     }
 
     pub fn remove(&mut self, k: &RecordCache) -> bool {
@@ -74,36 +93,78 @@ impl CacheHandler {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::record_cache::RecordCache;
-    use crate::storage::cache::CacheHandler;
     use std::collections::HashSet;
 
+    use crate::models::record_cache::RecordCache;
+    use crate::storage::cache::CacheHandler;
+
     #[test]
-    fn test_main() {
+    fn test_basic() {
         let mut s = CacheHandler::global().lock();
-        s.print();
+        s.clear();
         assert_eq!(s.data.len(), 0);
 
         s.add(RecordCache {
             md5: "1".to_string(),
             create_time: 3,
         });
-        s.print();
         assert_eq!(s.data.len(), 1);
 
         s.add(RecordCache {
             md5: "1".to_string(),
             create_time: 1,
         });
-        s.print();
         assert_eq!(s.data.len(), 1);
 
         s.remove(&RecordCache {
             md5: "1".to_string(),
+            create_time: -1,
+        });
+        assert_eq!(s.data.len(), 0);
+
+        s.clear();
+    }
+
+    #[test]
+    fn test_add1() {
+        let mut s = CacheHandler::global().lock();
+        s.clear();
+
+        s.add(RecordCache {
+            md5: "1".to_string(),
             create_time: 1,
         });
         s.print();
-        assert_eq!(s.data.len(), 0);
+        assert_eq!(s.get("1").unwrap().create_time, 1);
+
+        s.add(RecordCache {
+            md5: "1".to_string(),
+            create_time: 3,
+        });
+        s.print();
+        assert_eq!(s.get("1").unwrap().create_time, 3);
+
+        s.clear();
+    }
+
+    #[test]
+    fn test_add2() {
+        let mut s = CacheHandler::global().lock();
+        s.clear();
+
+        s.add(RecordCache {
+            md5: "1".to_string(),
+            create_time: 3,
+        });
+        s.print();
+        assert_eq!(s.get("1").unwrap().create_time, 3);
+
+        s.add(RecordCache {
+            md5: "1".to_string(),
+            create_time: 1,
+        });
+        s.print();
+        assert_eq!(s.get("1").unwrap().create_time, 3);
 
         s.clear();
     }
@@ -111,6 +172,8 @@ mod tests {
     #[test]
     fn test_merge() {
         let mut s = CacheHandler::global().lock();
+        s.clear();
+
         s.add(RecordCache {
             md5: "1".to_string(),
             create_time: 0,
