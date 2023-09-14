@@ -1,11 +1,11 @@
-use crate::consts::RECORD_LIMIT_THRESHOLD;
 use anyhow::Result;
 use diesel::associations::HasTable;
 use diesel::dsl::count_star;
 use diesel::sql_types::Integer;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
+use diesel::{replace_into, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
 use log::debug;
 
+use crate::consts::RECORD_LIMIT_THRESHOLD;
 use crate::models::record::Record;
 use crate::schema::t_record::dsl::*;
 use crate::storage::sqlite::SQLITE_CLIENT;
@@ -42,6 +42,13 @@ impl RecordDao {
                 debug!("update record successfully: {:?}", r)
             }
         };
+        Ok(())
+    }
+
+    pub fn batch_replace_record(r: Vec<Record>) -> Result<()> {
+        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+        replace_into(t_record).values(r).execute(c)?;
+
         Ok(())
     }
 

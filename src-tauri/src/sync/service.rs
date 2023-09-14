@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::string::ToString;
 
+use local_ip_address::local_ip;
 use log::{debug, error, warn};
 use tonic::{Request, Response, Status};
 
-use crate::consts::PONG;
+use crate::consts::{LOCALHOST, PONG, UNKNOWN_HOST};
 use crate::dao::record_dao::RecordDao;
 use crate::storage::cache::CacheHandler;
 use crate::sync::syncer::{SyncOptEnum, Syncer};
@@ -26,7 +27,7 @@ impl SyncSvc for SyncService {
     }
 
     async fn list(&self, _req: Request<ListRequest>) -> Result<Response<ListResponse>, Status> {
-        let store = CacheHandler::global().lock();
+        let store = CacheHandler::global().blocking_lock();
         Ok(Response::new(ListResponse {
             data: store
                 .get_copy_data()
@@ -45,7 +46,7 @@ impl SyncSvc for SyncService {
             Some(data) => data,
         };
 
-        let mut store = CacheHandler::global().lock();
+        let mut store = CacheHandler::global().blocking_lock();
         if store.contains(&data.clone().into()) {
             debug!("Already contains data: {:?}, skip...", data);
             return Ok(Response::new(AddResponse {}));
@@ -69,7 +70,7 @@ impl SyncSvc for SyncService {
             Some(data) => data,
         };
 
-        let mut store = CacheHandler::global().lock();
+        let mut store = CacheHandler::global().blocking_lock();
         if !store.contains(&data.clone().into()) {
             debug!("Not contains data: {:?}, skip...", data);
             return Ok(Response::new(RemoveResponse {}));
@@ -87,7 +88,7 @@ impl SyncSvc for SyncService {
     ) -> Result<Response<RegisterResponse>, Status> {
         let connect_addr = req.into_inner().connect_addr;
         Syncer::add_client(connect_addr).await;
-        let store = CacheHandler::global().lock();
+        let store = CacheHandler::global().blocking_lock();
         Ok(Response::new(RegisterResponse {
             data: store
                 .get_copy_data()
@@ -109,13 +110,21 @@ impl SyncSvc for SyncService {
             }));
         }
 
-        let records = match RecordDao::find_records_in_md5_list(&md5_list) {
+        let mut records = match RecordDao::find_records_in_md5_list(&md5_list) {
             Ok(x) => x,
             Err(e) => {
                 error!("Call find_records_in_md5_list err: {:?}", e);
                 return Err(Status::internal(format!("find records failed: {}", e)));
             }
         };
+
+        // Update record address
+        records.iter_mut().for_each(|record| {
+            if record.latest_addr.eq(LOCALHOST) {
+                record.latest_addr =
+                    local_ip().map_or(UNKNOWN_HOST.to_string(), |ip| ip.to_string());
+            }
+        });
 
         return Ok(Response::new(SyncDataResponse {
             sync_records: records

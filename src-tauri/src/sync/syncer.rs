@@ -8,10 +8,12 @@ use parking_lot::Mutex;
 use tonic::transport::{Channel, Endpoint, Error};
 
 use crate::consts::{PONG, SYNC_PORT};
+use crate::dao::record_dao::RecordDao;
+use crate::models::record::Record;
 use crate::models::record_cache::RecordCache;
 use crate::storage::cache::CacheHandler;
 use crate::sync_proto::sync_svc_client::SyncSvcClient;
-use crate::sync_proto::{AddRequest, PingRequest, RegisterRequest, RemoveRequest};
+use crate::sync_proto::{AddRequest, PingRequest, RegisterRequest, RemoveRequest, SyncDataRequest};
 
 #[derive(Debug, Default)]
 pub struct Syncer {
@@ -97,7 +99,7 @@ impl Syncer {
             debug!("Sync Opt: {:?} success, data: {:?}", opt, data);
             debug!(
                 "Current data: {:#?}",
-                CacheHandler::global().lock().get_copy_data()
+                CacheHandler::global().blocking_lock().get_copy_data()
             )
         });
     }
@@ -124,6 +126,7 @@ impl Syncer {
     }
 
     async fn sync_data(addr: &str) {
+        // Step 1: Get client
         let mut client = match Self::get_client(addr).await {
             Ok(c) => c,
             Err(e) => {
@@ -132,6 +135,7 @@ impl Syncer {
             }
         };
 
+        // Step 2: Register addr to another server
         let my_local_ip = local_ip().unwrap();
         let data = match client
             .register(RegisterRequest {
@@ -146,8 +150,31 @@ impl Syncer {
             }
         };
 
-        let mut store = CacheHandler::global().lock();
-        store.merge_data(&data.into_iter().map(|item| item.into()).collect());
+        // Step 3: Merge diff
+        // Calculate diff
+        let mut cache = CacheHandler::global().blocking_lock();
+        let diff_md5 = cache.calculate_diff(&data.into_iter().map(|item| item.into()).collect());
+
+        // Update storage
+        let diff_records: Vec<Record> = match client
+            .sync_data(SyncDataRequest {
+                md5_list: diff_md5.iter().map(|record| record.md5.clone()).collect(),
+            })
+            .await
+        {
+            Ok(x) => x.into_inner().sync_records,
+            Err(e) => {
+                error!("Call register err: {:#?}, local ip: {}", e, my_local_ip);
+                return;
+            }
+        }
+        .into_values()
+        .map(|v| v.into())
+        .collect();
+        RecordDao::batch_replace_record(diff_records).unwrap();
+
+        // Update cache
+        cache.merge_data(&diff_md5);
     }
 
     async fn get_client(addr: &str) -> Result<SyncSvcClient<Channel>, Error> {

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::OnceLock;
 
 use log::{error, info};
-use parking_lot::Mutex;
+use tokio::sync::Mutex;
 
 use crate::consts::RECORD_LIMIT_THRESHOLD;
 use crate::dao::record_cache_dao::RecordCacheDao;
@@ -82,6 +82,23 @@ impl CacheHandler {
         })
     }
 
+    pub fn calculate_diff(&self, data: &HashSet<RecordCache>) -> HashSet<RecordCache> {
+        let mut diff = HashSet::new();
+
+        data.iter().for_each(|item| match self.data.get(item) {
+            None => {
+                diff.insert(item.clone());
+            }
+            Some(inner_item) => {
+                if inner_item.create_time < item.create_time {
+                    diff.insert(item.clone());
+                }
+            }
+        });
+
+        diff
+    }
+
     pub fn get_copy_data(&self) -> HashSet<RecordCache> {
         self.data.clone()
     }
@@ -100,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_basic() {
-        let mut s = CacheHandler::global().lock();
+        let mut s = CacheHandler::global().blocking_lock();
         s.clear();
         assert_eq!(s.data.len(), 0);
 
@@ -127,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_add1() {
-        let mut s = CacheHandler::global().lock();
+        let mut s = CacheHandler::global().blocking_lock();
         s.clear();
 
         s.add(RecordCache {
@@ -149,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_add2() {
-        let mut s = CacheHandler::global().lock();
+        let mut s = CacheHandler::global().blocking_lock();
         s.clear();
 
         s.add(RecordCache {
@@ -171,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_merge() {
-        let mut s = CacheHandler::global().lock();
+        let mut s = CacheHandler::global().blocking_lock();
         s.clear();
 
         s.add(RecordCache {
