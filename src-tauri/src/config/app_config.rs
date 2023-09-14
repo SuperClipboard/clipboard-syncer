@@ -20,7 +20,7 @@ impl AppConfig {
         })
     }
 
-    pub fn latest<'a>() -> Arc<Mutex<Configure>> {
+    pub fn latest() -> Arc<Mutex<Configure>> {
         Self::global().configure.clone()
     }
 }

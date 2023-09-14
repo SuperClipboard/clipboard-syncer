@@ -99,7 +99,7 @@ impl ClipboardListener {
                     }
                 });
 
-                let limit = AppConfig::latest().lock().record_limit.clone();
+                let limit = AppConfig::latest().lock().record_limit;
                 if let Some(l) = limit {
                     let res = RecordDao::delete_record_with_limit(l as usize);
                     if let Ok(success) = res {
