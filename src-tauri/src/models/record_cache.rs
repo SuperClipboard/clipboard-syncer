@@ -1,11 +1,30 @@
 use std::hash::{Hash, Hasher};
 
+use crate::sync_proto::SyncData;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RecordCache {
     pub md5: String,
     pub create_time: i32,
+}
+
+impl Into<SyncData> for RecordCache {
+    fn into(self) -> SyncData {
+        SyncData {
+            md5: self.md5,
+            create_time: self.create_time,
+        }
+    }
+}
+
+impl From<SyncData> for RecordCache {
+    fn from(value: SyncData) -> Self {
+        RecordCache {
+            md5: value.md5,
+            create_time: value.create_time,
+        }
+    }
 }
 
 impl Hash for RecordCache {

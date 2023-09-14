@@ -3,6 +3,7 @@
 
 use app::listener::clipboard::ClipboardListener;
 use app::listener::global_event_listener::GlobalEventListener;
+use app::sync::server::serve;
 use app::tray::register_tray;
 use app::{handler, logger};
 use dotenv::dotenv;
@@ -34,10 +35,10 @@ fn main() {
         // Keep the Backend Running in the Background
         tauri::RunEvent::ExitRequested { api, .. } => {
             api.prevent_exit();
-        },
+        }
         tauri::RunEvent::Ready => {
             info!("Application launched!");
-        },
+        }
         _ => {}
     });
 }
@@ -55,4 +56,7 @@ fn setup(app: &mut App) {
 
     // Start listening for clipboard
     ClipboardListener::listen();
+
+    // Start sync server
+    tauri::async_runtime::spawn(async move { serve().await });
 }
