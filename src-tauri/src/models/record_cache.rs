@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct RecordCache {
     md5: String,
     create_time: i32,
@@ -30,9 +30,31 @@ impl Ord for RecordCache {
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeSet;
+    use crate::models::record_cache::RecordCache;
 
     #[test]
     fn test_order() {
+        let s = BTreeSet::from([
+            RecordCache {
+                md5: "3".to_string(),
+                create_time: 1,
+            },
+            RecordCache {
+                md5: "1".to_string(),
+                create_time: 3,
+            },
+            RecordCache {
+                md5: "2".to_string(),
+                create_time: 2,
+            },
+        ]);
 
+        let mut i = 1;
+        s.iter().for_each(|item| {
+            println!("{:?}", item);
+            assert_eq!(item.create_time, i);
+            i += 1;
+        })
     }
 }

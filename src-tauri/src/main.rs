@@ -4,22 +4,10 @@
 use dotenv::dotenv;
 use log::info;
 use tauri::{App, Manager};
-
-use crate::listener::clipboard::ClipboardListener;
-use crate::listener::global_event_listener::GlobalEventListener;
-use crate::tray::register_tray;
-
-mod config;
-mod consts;
-mod dao;
-mod handler;
-mod listener;
-mod logger;
-mod models;
-mod schema;
-mod storage;
-mod tray;
-mod utils;
+use app::{handler, logger};
+use app::listener::clipboard::ClipboardListener;
+use app::listener::global_event_listener::GlobalEventListener;
+use app::tray::register_tray;
 
 fn main() {
     dotenv().ok();
