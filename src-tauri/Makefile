@@ -1,8 +1,8 @@
 .PHONY: fmt clippy clean build pack all ci
 
-all: clean fmt clippy
+all: clean fmt clippy test
 
-ci: fmt clippy
+ci: fmt clippy test
 
 fmt:
 	cargo fmt --all --
@@ -12,3 +12,6 @@ clippy:
 
 clean:
 	rm -rf ./target
+
+test:
+	cargo test

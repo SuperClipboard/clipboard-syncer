@@ -1,15 +1,17 @@
+use std::collections::HashMap;
 use std::string::ToString;
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use tonic::{Request, Response, Status};
 
 use crate::consts::PONG;
+use crate::dao::record_dao::RecordDao;
 use crate::storage::cache::CacheHandler;
 use crate::sync::syncer::{SyncOptEnum, Syncer};
 use crate::sync_proto::sync_svc_server::SyncSvc;
 use crate::sync_proto::{
     AddRequest, AddResponse, ListRequest, ListResponse, PingRequest, PingResponse, RegisterRequest,
-    RegisterResponse, RemoveRequest, RemoveResponse,
+    RegisterResponse, RemoveRequest, RemoveResponse, SyncDataRequest, SyncDataResponse, SyncRecord,
 };
 
 #[derive(Default)]
@@ -93,5 +95,33 @@ impl SyncSvc for SyncService {
                 .map(|item| item.into())
                 .collect(),
         }))
+    }
+
+    async fn sync_data(
+        &self,
+        req: Request<SyncDataRequest>,
+    ) -> Result<Response<SyncDataResponse>, Status> {
+        let md5_list = req.into_inner().md5_list;
+
+        if md5_list.is_empty() {
+            return Ok(Response::new(SyncDataResponse {
+                sync_records: HashMap::new(),
+            }));
+        }
+
+        let records = match RecordDao::find_records_in_md5_list(&md5_list) {
+            Ok(x) => x,
+            Err(e) => {
+                error!("Call find_records_in_md5_list err: {:?}", e);
+                return Err(Status::internal(format!("find records failed: {}", e)));
+            }
+        };
+
+        return Ok(Response::new(SyncDataResponse {
+            sync_records: records
+                .into_iter()
+                .map(|record| (record.md5.clone(), record.into()))
+                .collect::<HashMap<String, SyncRecord>>(),
+        }));
     }
 }

@@ -14,11 +14,24 @@ service SyncSvc {
 
   rpc Register(RegisterRequest) returns (RegisterResponse) {}
 
+  rpc SyncData(SyncDataRequest) returns (SyncDataResponse) {}
+
 }
 
 message SyncData {
   string md5 = 1;
   int32 create_time = 2;
+}
+
+message SyncRecord {
+  string content = 1;
+  optional string content_preview = 2;
+  string data_type = 3;
+  string md5 = 4;
+  int32 create_time = 5;
+  int32 is_favorite = 6;
+  string tags = 7;
+  string latest_addr = 8;
 }
 
 message PingRequest {
@@ -53,4 +66,12 @@ message RegisterRequest {
 
 message RegisterResponse {
   repeated SyncData data = 1;
+}
+
+message SyncDataRequest {
+  repeated string md5_list = 1;
+}
+
+message SyncDataResponse {
+  map<string, SyncRecord> sync_records = 1;
 }

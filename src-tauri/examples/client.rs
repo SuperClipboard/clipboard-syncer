@@ -1,7 +1,7 @@
 use app::sync_proto::sync_svc_client::SyncSvcClient;
 use app::sync_proto::{AddRequest, ListRequest, SyncData};
 
-#[tokio::test]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let addr = format!("http://0.0.0.0:{}", "18888");
 

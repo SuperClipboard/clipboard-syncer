@@ -10,5 +10,6 @@ diesel::table! {
         create_time -> Integer,
         is_favorite -> Integer,
         tags -> Text,
+        latest_addr -> Text,
     }
 }

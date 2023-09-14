@@ -73,6 +73,14 @@ impl RecordDao {
         Ok(true)
     }
 
+    pub fn find_records_in_md5_list(md5_list: &Vec<String>) -> Result<Vec<Record>> {
+        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+
+        let res = t_record.filter(md5.eq_any(md5_list)).load::<Record>(c)?;
+
+        Ok(res)
+    }
+
     fn update_record_create_time(c: &mut SqliteConnection, aid: i32, now: i32) -> Result<()> {
         let _ = diesel::update(t_record.filter(id.eq(aid)))
             .set(create_time.eq(now))
@@ -99,5 +107,16 @@ mod tests {
             ..Default::default()
         })
         .unwrap();
+    }
+
+    #[test]
+    fn test_find_records_in_md5_list() {
+        let res = RecordDao::find_records_in_md5_list(&vec![
+            "722d70d1dbae5a52b68803e48d442bce".to_string(),
+            "c48951707c41961160dbdba285b9864a".to_string(),
+        ])
+        .unwrap();
+
+        println!("{:#?}", res);
     }
 }

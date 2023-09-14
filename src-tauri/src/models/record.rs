@@ -1,6 +1,8 @@
 use diesel::prelude::*;
 use diesel::{Queryable, Selectable};
 
+use crate::sync_proto::SyncRecord;
+
 #[derive(
     serde::Serialize,
     serde::Deserialize,
@@ -25,6 +27,7 @@ pub struct Record {
     pub create_time: i32,
     pub is_favorite: i32,
     pub tags: String,
+    pub latest_addr: String,
 }
 
 pub enum DataTypeEnum {
@@ -37,6 +40,37 @@ impl From<DataTypeEnum> for String {
         match value {
             DataTypeEnum::TEXT => "text".into(),
             DataTypeEnum::IMAGE => "image".into(),
+        }
+    }
+}
+
+impl From<SyncRecord> for Record {
+    fn from(value: SyncRecord) -> Self {
+        Self {
+            id: None,
+            content: value.content,
+            content_preview: value.content_preview,
+            data_type: value.data_type,
+            md5: value.md5,
+            create_time: value.create_time,
+            is_favorite: value.is_favorite,
+            tags: value.tags,
+            latest_addr: value.latest_addr,
+        }
+    }
+}
+
+impl From<Record> for SyncRecord {
+    fn from(value: Record) -> SyncRecord {
+        SyncRecord {
+            content: value.content,
+            content_preview: value.content_preview,
+            data_type: value.data_type,
+            md5: value.md5,
+            create_time: value.create_time,
+            is_favorite: value.is_favorite,
+            tags: value.tags,
+            latest_addr: value.latest_addr,
         }
     }
 }

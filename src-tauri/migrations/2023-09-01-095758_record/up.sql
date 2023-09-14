@@ -8,5 +8,6 @@ create table if not exists t_record
     md5             VARCHAR(200) UNIQUE NOT NULL DEFAULT '',
     create_time     INTEGER             NOT NULL DEFAULT 0,
     is_favorite     INTEGER             NOT NULL DEFAULT 0,
-    tags            VARCHAR(256)        NOT NULL DEFAULT ''
+    tags            VARCHAR(256)        NOT NULL DEFAULT '',
+    latest_addr     VARCHAR(256)        NOT NULL DEFAULT '127.0.0.1'
 );
