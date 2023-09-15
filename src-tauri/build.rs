@@ -13,6 +13,7 @@ fn build_proto() {
 
     fs::create_dir_all(OUT_DIR).unwrap();
     tonic_build::configure()
+        .protoc_arg("--experimental_allow_proto3_optional")
         .build_server(true)
         .out_dir(OUT_DIR)
         .compile(&protos, &["proto/"])

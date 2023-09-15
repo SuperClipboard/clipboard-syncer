@@ -1,13 +1,14 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
+use crate::config::app_config::AppConfig;
 use anyhow::Result;
 use local_ip_address::local_ip;
 use log::{debug, error, info};
 use parking_lot::Mutex;
 use tonic::transport::{Channel, Endpoint, Error};
 
-use crate::consts::{PONG, SYNC_PORT};
+use crate::consts::PONG;
 use crate::dao::record_dao::RecordDao;
 use crate::models::record::Record;
 use crate::models::record_cache::RecordCache;
@@ -35,8 +36,13 @@ impl Syncer {
         let mut s = Syncer::global().lock();
         s.clients.insert(addr.clone());
 
+        let sync_port;
+        {
+            sync_port = AppConfig::latest().lock().sync_port.clone();
+        }
+
         tauri::async_runtime::spawn(async move {
-            Self::sync_data(&addr).await;
+            Self::sync_data(&addr, &sync_port).await;
         });
     }
 
@@ -125,7 +131,7 @@ impl Syncer {
         Ok(resp.into_inner().msg.eq(PONG))
     }
 
-    async fn sync_data(addr: &str) {
+    async fn sync_data(addr: &str, sync_port: &String) {
         // Step 1: Get client
         let mut client = match Self::get_client(addr).await {
             Ok(c) => c,
@@ -139,7 +145,7 @@ impl Syncer {
         let my_local_ip = local_ip().unwrap();
         let data = match client
             .register(RegisterRequest {
-                connect_addr: format!("{}:{}", my_local_ip, SYNC_PORT),
+                connect_addr: format!("{}:{}", my_local_ip, sync_port),
             })
             .await
         {

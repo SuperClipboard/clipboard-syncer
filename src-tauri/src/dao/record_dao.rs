@@ -1,3 +1,4 @@
+use crate::config::app_config::AppConfig;
 use anyhow::Result;
 use diesel::associations::HasTable;
 use diesel::dsl::count_star;
@@ -5,7 +6,6 @@ use diesel::sql_types::Integer;
 use diesel::{replace_into, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
 use log::debug;
 
-use crate::consts::RECORD_LIMIT_THRESHOLD;
 use crate::models::record::Record;
 use crate::schema::t_record::dsl::*;
 use crate::storage::sqlite::SQLITE_CLIENT;
@@ -63,7 +63,11 @@ impl RecordDao {
             .get_result::<i64>(c)? as usize;
 
         // Not reach the threshold
-        if cnt < RECORD_LIMIT_THRESHOLD + limit {
+        let record_limit_threshold;
+        {
+            record_limit_threshold = AppConfig::latest().lock().record_limit_threshold;
+        }
+        if cnt < record_limit_threshold + limit {
             return Ok(false);
         }
 
