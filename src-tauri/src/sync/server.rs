@@ -7,7 +7,7 @@ use tonic::transport::Server;
 pub async fn serve() -> anyhow::Result<()> {
     let sync_port;
     {
-        sync_port = AppConfig::latest().lock().sync_port.clone();
+        sync_port = AppConfig::latest().read().sync_port.clone().unwrap();
     }
     let addr = format!("0.0.0.0:{}", sync_port);
     info!("Listening on port {}", addr);

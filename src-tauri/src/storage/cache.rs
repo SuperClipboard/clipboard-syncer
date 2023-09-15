@@ -24,7 +24,7 @@ impl CacheHandler {
     fn new() -> Self {
         let record_limit_threshold;
         {
-            record_limit_threshold = AppConfig::latest().lock().record_limit_threshold;
+            record_limit_threshold = AppConfig::latest().read().record_limit_threshold.unwrap();
         }
         let d = match RecordCacheDao::list_all_record_caches_with_limit(record_limit_threshold) {
             Ok(data) => data,

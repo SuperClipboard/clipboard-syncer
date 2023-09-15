@@ -65,7 +65,7 @@ impl RecordDao {
         // Not reach the threshold
         let record_limit_threshold;
         {
-            record_limit_threshold = AppConfig::latest().lock().record_limit_threshold;
+            record_limit_threshold = AppConfig::latest().read().record_limit_threshold.unwrap();
         }
         if cnt < record_limit_threshold + limit {
             return Ok(false);

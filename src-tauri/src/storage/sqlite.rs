@@ -60,25 +60,6 @@ impl SqliteDB {
 
         info!("Database migration success!");
     }
-
-    // pub fn insert_record(&self, r: Record) -> Result<i64> {
-    //     let sql = "insert into record (content,md5,create_time,is_favorite,data_type,content_preview) values (?1,?2,?3,?4,?5,?6)";
-    //     let md5 = string_util::md5(r.content.as_str());
-    //     let now = chrono::Local::now().timestamp() as u64;
-    //     let content_preview = r.content_preview.unwrap_or("".to_string());
-    //     let _res = self.conn.execute(
-    //         sql,
-    //         (
-    //             &r.content,
-    //             md5,
-    //             now,
-    //             &r.is_favorite,
-    //             &r.data_type,
-    //             content_preview,
-    //         ),
-    //     )?;
-    //     Ok(self.conn.last_insert_rowid())
-    // }
 }
 
 #[cfg(test)]

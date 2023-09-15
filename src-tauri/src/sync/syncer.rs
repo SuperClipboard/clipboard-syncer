@@ -38,7 +38,7 @@ impl Syncer {
 
         let sync_port;
         {
-            sync_port = AppConfig::latest().lock().sync_port.clone();
+            sync_port = AppConfig::latest().read().sync_port.clone().unwrap();
         }
 
         tauri::async_runtime::spawn(async move {
