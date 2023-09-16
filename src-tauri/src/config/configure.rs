@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
@@ -14,7 +15,7 @@ pub struct Configure {
     pub store_limit: Option<u32>,
     pub sync_port: Option<String>,
     pub record_limit_threshold: Option<usize>,
-    pub sync_server_addr_list: Option<Vec<String>>,
+    pub sync_server_addr_list: Option<HashSet<String>>,
 }
 
 impl Default for Configure {
@@ -23,7 +24,7 @@ impl Default for Configure {
             store_limit: Some(100),
             sync_port: Some("18888".to_string()),
             record_limit_threshold: Some(50),
-            sync_server_addr_list: Some(vec![]),
+            sync_server_addr_list: Some(HashSet::new()),
         }
     }
 }

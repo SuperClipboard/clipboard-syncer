@@ -94,6 +94,7 @@ mod tests {
     use crate::config::app_config::AppConfig;
     use crate::config::configure::Configure;
     use crate::sync::server::ServerHandler;
+    use std::collections::HashSet;
 
     #[tokio::test]
     async fn test_modify_config() {
@@ -104,7 +105,7 @@ mod tests {
             store_limit: Some(101),
             sync_port: None,
             record_limit_threshold: Some(51),
-            sync_server_addr_list: Some(vec!["127.0.0.1".to_string()]),
+            sync_server_addr_list: Some(HashSet::from(["127.0.0.1".to_string()])),
         })
         .await
         .unwrap();

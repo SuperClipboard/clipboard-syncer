@@ -14,6 +14,7 @@ use crate::sync_proto::{
     AddRequest, AddResponse, ListRequest, ListResponse, PingRequest, PingResponse, RegisterRequest,
     RegisterResponse, RemoveRequest, RemoveResponse, SyncDataRequest, SyncDataResponse, SyncRecord,
 };
+use crate::utils::ip;
 
 #[derive(Default)]
 pub struct SyncService;
@@ -87,6 +88,12 @@ impl SyncSvc for SyncService {
         req: Request<RegisterRequest>,
     ) -> Result<Response<RegisterResponse>, Status> {
         let connect_addr = req.into_inner().connect_addr;
+        if !check_address(&connect_addr) {
+            let err_msg = format!("Invalid address: {:?}", connect_addr);
+            warn!("{}", err_msg);
+            return Err(Status::invalid_argument(err_msg));
+        }
+
         Syncer::add_client(connect_addr).await;
         let store = CacheHandler::global().blocking_lock();
         Ok(Response::new(RegisterResponse {
@@ -133,4 +140,8 @@ impl SyncSvc for SyncService {
                 .collect::<HashMap<String, SyncRecord>>(),
         }));
     }
+}
+
+fn check_address(addr: &str) -> bool {
+    ip::check_addr(addr) && addr.ne(LOCALHOST)
 }

@@ -9,6 +9,7 @@ use app::config::app_config::AppConfig;
 use app::listener::clipboard::ClipboardListener;
 use app::listener::global_event_listener::GlobalEventListener;
 use app::sync::server::ServerHandler;
+use app::sync::syncer::Syncer;
 use app::tray::register_tray;
 use app::{handler, logger};
 
@@ -72,4 +73,6 @@ fn setup(app: &mut App) {
             .await
             .unwrap();
     });
+
+    tauri::async_runtime::spawn(async { Syncer::init_sync_register_list().await });
 }

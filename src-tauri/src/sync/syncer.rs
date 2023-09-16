@@ -1,13 +1,15 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use crate::config::app_config::AppConfig;
 use anyhow::Result;
+use backoff::future::retry;
+use backoff::ExponentialBackoff;
 use local_ip_address::local_ip;
 use log::{debug, error, info};
 use parking_lot::Mutex;
 use tonic::transport::{Channel, Endpoint, Error};
 
+use crate::config::app_config::AppConfig;
 use crate::consts::PONG;
 use crate::dao::record_dao::RecordDao;
 use crate::models::record::Record;
@@ -28,6 +30,42 @@ pub enum SyncOptEnum {
 }
 
 impl Syncer {
+    pub async fn init_sync_register_list() {
+        info!("Start sync data from register list configuration");
+        let cfg_register_list;
+        {
+            cfg_register_list = match AppConfig::latest().read().sync_server_addr_list.clone() {
+                None => {
+                    return;
+                }
+                Some(x) => x,
+            };
+        }
+        if cfg_register_list.is_empty() {
+            info!("cfg_register_list is empty, exit!");
+            return;
+        }
+        info!(
+            "Load cfg_register_list successfully: {:?}, start sync data",
+            cfg_register_list
+        );
+
+        for addr in cfg_register_list {
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = Self::try_register(&addr).await {
+                    // Retry failed, remove connection!
+                    error!("Try to register addr: {}, error: {}", addr, e);
+                    if let Some(sync_server_addr_list) =
+                        AppConfig::latest().write().sync_server_addr_list.as_mut()
+                    {
+                        error!("After multiple retries, {} connect failed", addr);
+                        sync_server_addr_list.remove(&addr);
+                    }
+                };
+            });
+        }
+    }
+
     pub async fn add_client(addr: String) {
         if Self::check_client_exist(&addr) {
             return;
@@ -47,7 +85,7 @@ impl Syncer {
     }
 
     pub fn check_client_exist(addr: &str) -> bool {
-        let s = Syncer::global().lock();
+        let s = Self::global().lock();
         s.clients.contains(addr)
     }
 
@@ -131,7 +169,7 @@ impl Syncer {
         Ok(resp.into_inner().msg.eq(PONG))
     }
 
-    async fn sync_data(addr: &str, sync_port: &String) {
+    async fn sync_data(addr: &str, sync_port: &str) {
         // Step 1: Get client
         let mut client = match Self::get_client(addr).await {
             Ok(c) => c,
@@ -221,6 +259,22 @@ impl Syncer {
                 debug!("Sync[Remove] data: {:?} for addr: {} success", data, addr)
             }
         }
+    }
+
+    async fn try_register(client_addr: &str) -> Result<()> {
+        retry(ExponentialBackoff::default(), || async move {
+            let sync_port;
+            {
+                sync_port = AppConfig::latest().read().sync_port.clone().unwrap();
+            }
+            info!(
+                "Try register and sync data from: {}:{}",
+                client_addr, sync_port
+            );
+            Syncer::sync_data(client_addr, &sync_port).await;
+            Ok(())
+        })
+        .await
     }
 }
 
