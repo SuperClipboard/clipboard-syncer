@@ -1,14 +1,16 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use app::listener::clipboard::ClipboardListener;
-use app::listener::global_event_listener::GlobalEventListener;
-use app::sync::server::serve;
-use app::tray::register_tray;
-use app::{handler, logger};
 use dotenv::dotenv;
 use log::info;
 use tauri::{App, Manager};
+
+use app::config::app_config::AppConfig;
+use app::listener::clipboard::ClipboardListener;
+use app::listener::global_event_listener::GlobalEventListener;
+use app::sync::server::ServerHandler;
+use app::tray::register_tray;
+use app::{handler, logger};
 
 fn main() {
     dotenv().ok();
@@ -58,5 +60,16 @@ fn setup(app: &mut App) {
     ClipboardListener::listen();
 
     // Start sync server
-    tauri::async_runtime::spawn(async move { serve().await });
+    tauri::async_runtime::spawn(async move {
+        let sync_port;
+        {
+            sync_port = AppConfig::latest().read().sync_port.clone().unwrap();
+        }
+        ServerHandler::global()
+            .lock()
+            .await
+            .start(&sync_port)
+            .await
+            .unwrap();
+    });
 }
