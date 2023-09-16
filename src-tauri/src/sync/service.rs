@@ -8,12 +8,12 @@ use tonic::{Request, Response, Status};
 use crate::consts::{LOCALHOST, PONG, UNKNOWN_HOST};
 use crate::dao::record_dao::RecordDao;
 use crate::storage::cache::CacheHandler;
-use crate::sync::syncer::{Syncer, SyncOptEnum};
+use crate::sync::syncer::{SyncOptEnum, Syncer};
+use crate::sync_proto::sync_svc_server::SyncSvc;
 use crate::sync_proto::{
     AddRequest, AddResponse, ListRequest, ListResponse, PingRequest, PingResponse, RegisterRequest,
     RegisterResponse, RemoveRequest, RemoveResponse, SyncDataRequest, SyncDataResponse, SyncRecord,
 };
-use crate::sync_proto::sync_svc_server::SyncSvc;
 use crate::utils::ip;
 
 #[derive(Default)]

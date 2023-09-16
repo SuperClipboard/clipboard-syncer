@@ -3,7 +3,7 @@ use app::sync_proto::{AddRequest, ListRequest, SyncData};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let addr = format!("http://0.0.0.0:{}", "18888");
+    let addr = format!("http://127.0.0.1:{}", "18888");
 
     let mut cli = SyncSvcClient::connect(addr).await.unwrap();
 
