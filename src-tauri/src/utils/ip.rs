@@ -13,6 +13,7 @@ pub fn check_addr(addr: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::utils::ip::check_addr;
+    use local_ip_address::local_ip;
 
     #[test]
     fn test_check_addr() {
@@ -21,5 +22,10 @@ mod tests {
         assert!(!check_addr("127.0.1:8080"));
 
         assert!(!check_addr("127.0.0.1"));
+    }
+
+    #[test]
+    fn test_ip() {
+        println!("This is my local IP address: {:?}", local_ip().unwrap());
     }
 }

@@ -55,7 +55,7 @@ impl SyncSvc for SyncService {
 
         debug!("add store: {:?}, success", data);
         cache.add(data.clone().into());
-        Syncer::sync_opt(SyncOptEnum::Add, data.into());
+        Syncer::sync_opt(SyncOptEnum::Add, data);
         Ok(Response::new(AddResponse {}))
     }
 

@@ -16,7 +16,9 @@ use crate::models::record::Record;
 use crate::models::record_cache::RecordCache;
 use crate::storage::cache::CacheHandler;
 use crate::sync_proto::sync_svc_client::SyncSvcClient;
-use crate::sync_proto::{AddRequest, PingRequest, RegisterRequest, RemoveRequest, SyncDataRequest};
+use crate::sync_proto::{
+    AddRequest, PingRequest, RegisterRequest, RemoveRequest, SyncDataRequest, SyncRecord,
+};
 
 #[derive(Debug, Default)]
 pub struct Syncer {
@@ -89,7 +91,7 @@ impl Syncer {
         s.clients.contains(addr)
     }
 
-    pub fn sync_opt(opt: SyncOptEnum, data: RecordCache) {
+    pub fn sync_opt(opt: SyncOptEnum, data: SyncRecord) {
         let client_list;
         {
             client_list = Self::global().lock().clients.clone();
@@ -136,7 +138,7 @@ impl Syncer {
                         Self::sync_add(&mut rpc_cli, data.clone(), client_addr).await;
                     }
                     SyncOptEnum::Remove => {
-                        Self::sync_remove(&mut rpc_cli, data.clone(), client_addr).await;
+                        Self::sync_remove(&mut rpc_cli, data.clone().into(), client_addr).await;
                     }
                 };
             }
@@ -146,6 +148,18 @@ impl Syncer {
                 CacheHandler::global().lock().await.get_copy_data()
             )
         });
+    }
+
+    pub fn handle_record_limit() -> bool {
+        let limit = AppConfig::latest().read().store_limit.unwrap();
+        let res = RecordDao::delete_record_with_limit(limit as usize);
+        match res {
+            Ok(res) => res,
+            Err(e) => {
+                error!("delete_record_with_limit err: {:?}", e);
+                false
+            }
+        }
     }
 
     fn global() -> &'static Mutex<Syncer> {
@@ -226,10 +240,16 @@ impl Syncer {
         SyncSvcClient::connect(addr).await
     }
 
-    async fn sync_add(client: &mut SyncSvcClient<Channel>, data: RecordCache, addr: &str) {
+    async fn sync_add(client: &mut SyncSvcClient<Channel>, data: SyncRecord, addr: &str) {
+        if let Err(e) = RecordDao::insert_if_not_exist(data.clone().into()) {
+            error!("Error insert the data: {:?}, err: {:?}", data, e);
+        };
+        Self::handle_record_limit();
+
+        // Insert recursively!
         match client
             .add(AddRequest {
-                data: Some(data.clone().into()),
+                data: Some(data.clone()),
             })
             .await
         {
@@ -275,16 +295,5 @@ impl Syncer {
             Ok(())
         })
         .await
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use local_ip_address::local_ip;
-
-    #[test]
-    fn test_ip() {
-        let my_local_ip = local_ip().unwrap();
-        println!("This is my local IP address: {:?}", my_local_ip);
     }
 }

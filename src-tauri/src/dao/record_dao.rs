@@ -1,4 +1,3 @@
-use crate::config::app_config::AppConfig;
 use anyhow::Result;
 use diesel::associations::HasTable;
 use diesel::dsl::count_star;
@@ -6,6 +5,7 @@ use diesel::sql_types::Integer;
 use diesel::{replace_into, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
 use log::debug;
 
+use crate::config::app_config::AppConfig;
 use crate::models::record::Record;
 use crate::schema::t_record::dsl::*;
 use crate::storage::sqlite::SQLITE_CLIENT;
@@ -106,6 +106,7 @@ mod tests {
     use crate::dao::record_dao::RecordDao;
     use crate::models::record;
     use crate::models::record::Record;
+    use local_ip_address::local_ip;
 
     #[test]
     fn test_insert_if_not_exist() {
@@ -115,6 +116,7 @@ mod tests {
             content_preview: Some("abc".to_string()),
             data_type: record::DataTypeEnum::TEXT.into(),
             create_time: now,
+            latest_addr: local_ip().unwrap().to_string(),
             ..Default::default()
         })
         .unwrap();

@@ -1,12 +1,13 @@
 use diesel::prelude::*;
 use diesel::{Queryable, Selectable};
 
-use crate::sync_proto::SyncRecord;
+use crate::sync_proto::{SyncMeta, SyncRecord};
 
 #[derive(
     serde::Serialize,
     serde::Deserialize,
     Debug,
+    Clone,
     Default,
     PartialEq,
     Queryable,
@@ -71,6 +72,25 @@ impl From<Record> for SyncRecord {
             is_favorite: value.is_favorite,
             tags: value.tags,
             latest_addr: value.latest_addr,
+        }
+    }
+}
+
+impl From<SyncMeta> for Record {
+    fn from(v: SyncMeta) -> Self {
+        Self {
+            md5: v.md5,
+            create_time: v.create_time,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Record> for SyncMeta {
+    fn from(value: Record) -> SyncMeta {
+        SyncMeta {
+            md5: value.md5,
+            create_time: value.create_time,
         }
     }
 }

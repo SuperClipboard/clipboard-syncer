@@ -49,7 +49,7 @@ message ListResponse {
 }
 
 message AddRequest {
-  SyncMeta data = 1;
+  SyncRecord data = 1;
 }
 
 message AddResponse {}

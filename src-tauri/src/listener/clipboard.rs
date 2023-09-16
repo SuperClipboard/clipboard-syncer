@@ -2,14 +2,15 @@ use std::thread;
 
 use arboard::Clipboard;
 use chrono::Duration;
+use local_ip_address::local_ip;
 use log::{error, info};
 
-use crate::config::app_config::AppConfig;
 use crate::dao::record_dao::RecordDao;
 use crate::handler::global_handler::{GlobalHandler, MessageTypeEnum};
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::Record;
+use crate::sync::syncer::{SyncOptEnum, Syncer};
 use crate::utils::{image, json, string};
 
 pub struct ClipboardListener;
@@ -39,8 +40,7 @@ impl ClipboardListener {
                     Self::handle_image_message(img, &mut last_img_md5, &mut need_notify);
                 });
 
-                Self::handle_record_limit(&mut need_notify);
-
+                need_notify = Syncer::handle_record_limit() || need_notify;
                 if need_notify {
                     GlobalHandler::push_message_to_window(MessageTypeEnum::ChangeClipBoard, "ok")
                         .unwrap();
@@ -62,12 +62,18 @@ impl ClipboardListener {
                 Some(content.to_string())
             };
 
-            let res = RecordDao::insert_if_not_exist(Record {
+            let data = Record {
                 content: content_origin,
                 content_preview,
                 data_type: record::DataTypeEnum::TEXT.into(),
+                latest_addr: local_ip().unwrap().to_string(),
                 ..Default::default()
+            };
+            let res = RecordDao::insert_if_not_exist(data.clone());
+            tauri::async_runtime::spawn(async move {
+                Syncer::sync_opt(SyncOptEnum::Add, data.into());
             });
+
             match res {
                 Ok(_) => {
                     *need_notify = true;
@@ -103,11 +109,16 @@ impl ClipboardListener {
             };
             let content = json::stringify(&content_db).unwrap();
             let content_preview = json::stringify(&content_preview_db).unwrap();
-            let res = RecordDao::insert_if_not_exist(Record {
+            let data = Record {
                 content,
                 content_preview: Some(content_preview),
                 data_type: record::DataTypeEnum::IMAGE.into(),
+                latest_addr: local_ip().unwrap().to_string(),
                 ..Default::default()
+            };
+            let res = RecordDao::insert_if_not_exist(data.clone());
+            tauri::async_runtime::spawn(async move {
+                Syncer::sync_opt(SyncOptEnum::Add, data.into());
             });
             match res {
                 Ok(_) => {
@@ -119,16 +130,6 @@ impl ClipboardListener {
                 }
             }
             *last_img_md5 = img_md5;
-        }
-    }
-
-    fn handle_record_limit(need_notify: &mut bool) {
-        let limit = AppConfig::latest().read().store_limit.unwrap();
-        let res = RecordDao::delete_record_with_limit(limit as usize);
-        if let Ok(success) = res {
-            if success {
-                *need_notify = true;
-            }
         }
     }
 }

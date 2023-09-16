@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use diesel::Queryable;
 use serde::{Deserialize, Serialize};
 
-use crate::sync_proto::SyncMeta;
+use crate::sync_proto::{SyncMeta, SyncRecord};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Queryable)]
 #[diesel(table_name = crate::schema::t_record)]
@@ -26,6 +26,25 @@ impl From<SyncMeta> for RecordCache {
         RecordCache {
             md5: value.md5,
             create_time: value.create_time,
+        }
+    }
+}
+
+impl From<SyncRecord> for RecordCache {
+    fn from(v: SyncRecord) -> Self {
+        Self {
+            md5: v.md5,
+            create_time: v.create_time,
+        }
+    }
+}
+
+impl From<RecordCache> for SyncRecord {
+    fn from(value: RecordCache) -> SyncRecord {
+        SyncRecord {
+            md5: value.md5,
+            create_time: value.create_time,
+            ..Default::default()
         }
     }
 }
