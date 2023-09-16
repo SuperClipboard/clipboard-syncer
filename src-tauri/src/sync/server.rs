@@ -32,7 +32,7 @@ impl ServerHandler {
         Server::builder()
             .add_service(SyncSvcServer::new(SyncService))
             .serve_with_shutdown(addr.parse()?, async move {
-                match self.shutdown_signer.1.blocking_recv() {
+                match self.shutdown_signer.1.recv().await {
                     Ok(_) => {
                         info!("Server is about to shutdown!");
                     }

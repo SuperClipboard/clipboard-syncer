@@ -28,7 +28,7 @@ impl SyncSvc for SyncService {
     }
 
     async fn list(&self, _req: Request<ListRequest>) -> Result<Response<ListResponse>, Status> {
-        let store = CacheHandler::global().blocking_lock();
+        let store = CacheHandler::global().lock().await;
         Ok(Response::new(ListResponse {
             data: store
                 .get_copy_data()
