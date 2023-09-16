@@ -18,7 +18,7 @@ service SyncSvc {
 
 }
 
-message SyncData {
+message SyncMeta {
   string md5 = 1;
   int32 create_time = 2;
 }
@@ -45,17 +45,17 @@ message ListRequest {
 }
 
 message ListResponse {
-  repeated SyncData data = 1;
+  repeated SyncMeta data = 1;
 }
 
 message AddRequest {
-  SyncData data = 1;
+  SyncMeta data = 1;
 }
 
 message AddResponse {}
 
 message RemoveRequest {
-  SyncData data = 1;
+  SyncMeta data = 1;
 }
 
 message RemoveResponse {}
@@ -65,7 +65,7 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  repeated SyncData data = 1;
+  repeated SyncMeta data = 1;
 }
 
 message SyncDataRequest {

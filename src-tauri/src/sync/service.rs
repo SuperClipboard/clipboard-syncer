@@ -47,14 +47,14 @@ impl SyncSvc for SyncService {
             Some(data) => data,
         };
 
-        let mut store = CacheHandler::global().lock().await;
-        if store.contains(&data.clone().into()) {
+        let mut cache = CacheHandler::global().lock().await;
+        if cache.contains(&data.clone().into()) {
             debug!("Already contains data: {:?}, skip...", data);
             return Ok(Response::new(AddResponse {}));
         }
 
         debug!("add store: {:?}, success", data);
-        store.add(data.clone().into());
+        cache.add(data.clone().into());
         Syncer::sync_opt(SyncOptEnum::Add, data.into());
         Ok(Response::new(AddResponse {}))
     }
