@@ -143,7 +143,7 @@ impl Syncer {
             debug!("Sync Opt: {:?} success, data: {:?}", opt, data);
             debug!(
                 "Current data: {:#?}",
-                CacheHandler::global().blocking_lock().get_copy_data()
+                CacheHandler::global().lock().await.get_copy_data()
             )
         });
     }
@@ -196,7 +196,7 @@ impl Syncer {
 
         // Step 3: Merge diff
         // Calculate diff
-        let mut cache = CacheHandler::global().blocking_lock();
+        let mut cache = CacheHandler::global().lock().await;
         let diff_md5 = cache.calculate_diff(&data.into_iter().map(|item| item.into()).collect());
 
         // Update storage

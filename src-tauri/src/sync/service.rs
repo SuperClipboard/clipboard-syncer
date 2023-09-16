@@ -47,7 +47,7 @@ impl SyncSvc for SyncService {
             Some(data) => data,
         };
 
-        let mut store = CacheHandler::global().blocking_lock();
+        let mut store = CacheHandler::global().lock().await;
         if store.contains(&data.clone().into()) {
             debug!("Already contains data: {:?}, skip...", data);
             return Ok(Response::new(AddResponse {}));
@@ -71,7 +71,7 @@ impl SyncSvc for SyncService {
             Some(data) => data,
         };
 
-        let mut store = CacheHandler::global().blocking_lock();
+        let mut store = CacheHandler::global().lock().await;
         if !store.contains(&data.clone().into()) {
             debug!("Not contains data: {:?}, skip...", data);
             return Ok(Response::new(RemoveResponse {}));
