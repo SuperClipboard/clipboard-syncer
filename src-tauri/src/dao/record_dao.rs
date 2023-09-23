@@ -99,14 +99,27 @@ impl RecordDao {
 
         Ok(())
     }
+
+    pub fn find_records_by_pages(limit: usize, offset: usize) -> Result<Vec<Record>> {
+        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+
+        let res = t_record
+            .order_by(create_time.desc())
+            .limit(limit as i64)
+            .offset(offset as i64)
+            .load::<Record>(c)?;
+
+        Ok(res)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use local_ip_address::local_ip;
+
     use crate::dao::record_dao::RecordDao;
     use crate::models::record;
     use crate::models::record::Record;
-    use local_ip_address::local_ip;
 
     #[test]
     fn test_insert_if_not_exist() {
@@ -130,6 +143,12 @@ mod tests {
         ])
         .unwrap();
 
+        println!("{:#?}", res);
+    }
+
+    #[test]
+    fn test_find_records_by_pages() {
+        let res = RecordDao::find_records_by_pages(5, 1).unwrap();
         println!("{:#?}", res);
     }
 }

@@ -18,10 +18,14 @@ fn main() {
     logger::init();
 
     // Step 0: Create and setup application
-    let app = tauri::Builder::default().setup(|app| {
-        setup(app);
-        Ok(())
-    });
+    let app = tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            app::command::record::find_records_by_pages,
+        ])
+        .setup(|app| {
+            setup(app);
+            Ok(())
+        });
 
     // Step 1: register system tray
     let app = register_tray(app);
