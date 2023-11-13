@@ -5,11 +5,9 @@ use dotenv::dotenv;
 use log::info;
 use tauri::{App, Manager};
 
-use app::config::app_config::AppConfig;
 use app::listener::clipboard::ClipboardListener;
 use app::listener::global_event_listener::GlobalEventListener;
-use app::sync::server::ServerHandler;
-use app::sync::syncer::Syncer;
+use app::p2panda::node::NodeServer;
 use app::tray::register_tray;
 use app::{handler, logger};
 
@@ -19,9 +17,7 @@ fn main() {
 
     // Step 0: Create and setup application
     let app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![
-            app::command::record::find_records_by_pages,
-        ])
+        .invoke_handler(tauri::generate_handler![])
         .setup(|app| {
             setup(app);
             Ok(())
@@ -58,25 +54,15 @@ fn setup(app: &mut App) {
     // Save application handler
     handler::global_handler::GlobalHandler::global().init(app.app_handle());
 
+    // Start sync server
+    tauri::async_runtime::spawn(async move {
+        let node = NodeServer::start().await.unwrap();
+        node.on_exit().await;
+    });
+
     // Start global application listener
     GlobalEventListener::register_all_global_listeners(app).unwrap();
 
     // Start listening for clipboard
     ClipboardListener::listen();
-
-    // Start sync server
-    tauri::async_runtime::spawn(async move {
-        let sync_port;
-        {
-            sync_port = AppConfig::latest().read().sync_port.clone().unwrap();
-        }
-        ServerHandler::global()
-            .lock()
-            .await
-            .start(&sync_port)
-            .await
-            .unwrap();
-    });
-
-    tauri::async_runtime::spawn(async { Syncer::init_sync_register_list().await });
 }

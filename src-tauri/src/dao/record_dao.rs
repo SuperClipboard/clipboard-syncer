@@ -1,66 +1,98 @@
 use anyhow::Result;
-use diesel::associations::HasTable;
-use diesel::dsl::count_star;
-use diesel::sql_types::Integer;
-use diesel::{replace_into, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
-use log::debug;
+use graphql_client::{GraphQLQuery, Response};
+use local_ip_address::local_ip;
+use log::{debug, error, info};
 
 use crate::config::app_config::AppConfig;
+use crate::graphql::record_by_pages::OrderDirection;
+use crate::graphql::{
+    record_by_md5_query, record_by_pages, record_counts, GraphRecordDocuments, GraphRecordOrderBy,
+    GraphRecordPageDocuments, RecordByMd5Query, RecordByPages, RecordCounts,
+};
+use crate::models::record;
 use crate::models::record::Record;
-use crate::schema::t_record::dsl::*;
-use crate::storage::sqlite::SQLITE_CLIENT;
+use crate::p2panda::graphql::{field, GraphQLHandler};
 use crate::utils::string;
+use crate::utils::string::base64_encode;
 
 pub struct RecordDao;
 
 impl RecordDao {
-    pub fn insert_if_not_exist(mut r: Record) -> Result<()> {
+    pub async fn insert_if_not_exist(mut r: Record) -> Result<()> {
         let now = chrono::Local::now().timestamp() as i32;
-        let mo5_str = string::md5(r.content.as_str());
-        r.md5 = mo5_str.clone();
+        let md5_str = string::md5(r.content.as_str());
+        r.md5 = md5_str.clone();
         r.create_time = now;
 
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
-        let res = t_record
-            .filter(md5.eq(mo5_str))
-            .limit(1)
-            .load::<Record>(c)?;
-
+        let res = RecordDao::find_record_by_md5(md5_str).await?;
         match res.len() {
             // no record
             0 => {
-                diesel::insert_into(t_record::table())
-                    .values(&r)
-                    .execute(c)?;
-
-                debug!("insert new record successfully: {:?}", r)
+                Self::create_record(r).await?;
+                debug!("insert new record successfully with len 0");
             }
             // find record
             _ => {
-                Self::update_record_create_time(c, res[0].id.unwrap_or(0), now)?;
-
-                debug!("update record successfully: {:?}", r)
+                Self::update_record_create_time(&res[0], now).await?;
+                debug!("update record successfully: {:?}", r);
             }
         };
         Ok(())
     }
 
-    pub fn batch_replace_record(r: Vec<Record>) -> Result<()> {
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
-        replace_into(t_record).values(r).execute(c)?;
+    pub async fn create_record(record: Record) -> Result<String> {
+        let handler = &mut GraphQLHandler::global().lock().await;
 
-        Ok(())
+        let res = handler
+            .create_instance(
+                record::SCHEMA_ID,
+                &mut [
+                    field("content", &base64_encode(record.content.as_bytes())),
+                    field(
+                        "content_preview",
+                        &base64_encode(record.content_preview.unwrap_or(String::new()).as_bytes()),
+                    ),
+                    field("data_type", &record.data_type),
+                    field("md5", &record.md5),
+                    field("create_time", &record.create_time.to_string()),
+                    field("is_favorite", &record.is_favorite.to_string()),
+                    field("tags", &record.tags),
+                    field("latest_addr", &record.latest_addr),
+                    field("is_deleted", &record.is_deleted.to_string()),
+                ],
+            )
+            .await?;
+
+        info!("create record success, opt id: {}", res);
+
+        Ok(res)
     }
 
-    // Delete record if over limit
-    pub fn delete_record_with_limit(limit: usize) -> Result<bool> {
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+    pub async fn find_record_by_md5(md5: String) -> Result<Vec<GraphRecordDocuments>> {
+        let handler = &mut GraphQLHandler::global().lock().await;
 
-        // 先查询count，如果count - limit > RECORD_LIMIT_THRESHOLD 才删除超出limit部分记录，防止频繁操作数据库
-        let cnt = t_record
-            .select(count_star())
-            .filter(is_favorite.eq(0))
-            .get_result::<i64>(c)? as usize;
+        let request_body = RecordByMd5Query::build_query(record_by_md5_query::Variables { md5 });
+
+        let res = handler
+            .cli
+            .post(handler.endpoint())
+            .json(&request_body)
+            .send()
+            .await?;
+        let response_body: Response<record_by_md5_query::ResponseData> = res.json().await?;
+
+        match response_body.data {
+            None => Ok(vec![]),
+            Some(res) => Ok(res
+                .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
+                .documents),
+        }
+    }
+
+    // Delete record with over limit
+    pub async fn delete_record_with_limit(limit: usize) -> Result<bool> {
+        // 先查询count，如果count - limit > RECORD_LIMIT_THRESHOLD 才删除超出limit部分记录，防止频繁操作
+        let cnt = Self::count_records().await? as usize;
 
         // Not reach the threshold
         let record_limit_threshold;
@@ -71,84 +103,147 @@ impl RecordDao {
             return Ok(false);
         }
 
-        let actual_remove_cnt = (cnt - limit) as i32;
-        diesel::sql_query(
-            r#"SELECT * FROM t_record
-        WHERE is_favorite = 0
-        order by create_time asc
-        LIMIT ?"#,
+        let actual_remove_cnt = (cnt - limit) as i64;
+        info!(
+            "[delete_record_with_limit] {} records needed to remove",
+            actual_remove_cnt
+        );
+
+        let need_delete_records = Self::record_by_pages(
+            Some(actual_remove_cnt),
+            None,
+            Some(vec![0]),
+            Some(GraphRecordOrderBy::create_time),
+            Some(OrderDirection::ASC),
         )
-        .bind::<Integer, _>(actual_remove_cnt)
-        .execute(c)?;
+        .await?;
+
+        // Delete records
+        Self::batch_delete_record(need_delete_records).await?;
 
         Ok(true)
     }
 
-    pub fn find_records_in_md5_list(md5_list: &Vec<String>) -> Result<Vec<Record>> {
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
+    async fn count_records() -> Result<i64> {
+        let handler = &mut GraphQLHandler::global().lock().await;
+        let request_body = RecordCounts::build_query(record_counts::Variables {
+            favorite_filter: Some(vec![0]),
+        });
+        let res = handler
+            .cli
+            .post(handler.endpoint())
+            .json(&request_body)
+            .send()
+            .await?;
+        let response_body: Response<record_counts::ResponseData> = res.json().await?;
 
-        let res = t_record.filter(md5.eq_any(md5_list)).load::<Record>(c)?;
+        match response_body.data {
+            None => Ok(0),
+            Some(res) => Ok(res
+                .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
+                .total_count),
+        }
+    }
+
+    async fn record_by_pages(
+        limit: Option<i64>,
+        start_cursor: Option<String>,
+        favorite_filter: Option<Vec<i64>>,
+        order_by: Option<GraphRecordOrderBy>,
+        order_dir: Option<OrderDirection>,
+    ) -> Result<Vec<GraphRecordPageDocuments>> {
+        let handler = &mut GraphQLHandler::global().lock().await;
+        let request_body = RecordByPages::build_query(record_by_pages::Variables {
+            order_by,
+            order_dir,
+            limit,
+            start_cursor,
+            favorite_filter,
+        });
+
+        let res = handler
+            .cli
+            .post(handler.endpoint())
+            .json(&request_body)
+            .send()
+            .await?;
+        let response_body: Response<record_by_pages::ResponseData> = res.json().await?;
+
+        match response_body.data {
+            None => Ok(vec![]),
+            Some(res) => Ok(res
+                .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
+                .documents),
+        }
+    }
+
+    async fn update_record_create_time(record: &GraphRecordDocuments, now: i32) -> Result<String> {
+        let handler = &mut GraphQLHandler::global().lock().await;
+
+        let res = handler
+            .update_instance(
+                record::SCHEMA_ID,
+                &record.meta.as_ref().unwrap().view_id.to_string(),
+                &mut [
+                    field("create_time", &now.to_string()),
+                    field("latest_addr", &local_ip().unwrap().to_string()),
+                ],
+            )
+            .await?;
+
+        info!("update record create time success, opt id: {}", res);
 
         Ok(res)
     }
 
-    fn update_record_create_time(c: &mut SqliteConnection, aid: i32, now: i32) -> Result<()> {
-        let _ = diesel::update(t_record.filter(id.eq(aid)))
-            .set(create_time.eq(now))
-            .execute(c)?;
+    async fn batch_delete_record(need_delete_records: Vec<GraphRecordPageDocuments>) -> Result<()> {
+        let handler = &mut GraphQLHandler::global().lock().await;
+
+        for record in need_delete_records {
+            match handler
+                .delete_instance(
+                    record::SCHEMA_ID,
+                    &record.meta.as_ref().unwrap().view_id.to_string(),
+                )
+                .await
+            {
+                Ok(res) => {
+                    info!("delete record success, opt id: {}", res);
+                }
+                Err(err) => {
+                    error!("delete record error: {}", err);
+                }
+            };
+        }
 
         Ok(())
-    }
-
-    pub fn find_records_by_pages(limit: usize, offset: usize) -> Result<Vec<Record>> {
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
-
-        let res = t_record
-            .order_by(create_time.desc())
-            .limit(limit as i64)
-            .offset(offset as i64)
-            .load::<Record>(c)?;
-
-        Ok(res)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use local_ip_address::local_ip;
-
     use crate::dao::record_dao::RecordDao;
-    use crate::models::record;
     use crate::models::record::Record;
+    use crate::p2panda::node::NodeServer;
 
-    #[test]
-    fn test_insert_if_not_exist() {
-        let now = chrono::Local::now().timestamp() as i32;
-        RecordDao::insert_if_not_exist(Record {
-            content: "abc".to_string(),
-            content_preview: Some("abc".to_string()),
-            data_type: record::DataTypeEnum::TEXT.into(),
-            create_time: now,
-            latest_addr: local_ip().unwrap().to_string(),
+    #[tokio::test]
+    #[ignore]
+    async fn test_create_record() {
+        NodeServer::start().await.unwrap();
+
+        let res = RecordDao::create_record(Record {
+            content: "test".to_string(),
+            content_preview: None,
+            data_type: "".to_string(),
+            md5: "123".to_string(),
+            create_time: 1699845357,
+            tags: "".to_string(),
+            latest_addr: "".to_string(),
             ..Default::default()
         })
-        .unwrap();
-    }
-
-    #[test]
-    fn test_find_records_in_md5_list() {
-        let res = RecordDao::find_records_in_md5_list(&vec![
-            "722d70d1dbae5a52b68803e48d442bce".to_string(),
-            "c48951707c41961160dbdba285b9864a".to_string(),
-        ])
+        .await
         .unwrap();
 
-        println!("{:#?}", res);
-    }
-
-    #[test]
-    fn test_find_records_by_pages() {
-        let res = RecordDao::find_records_by_pages(5, 1).unwrap();
-        println!("{:#?}", res);
+        println!("test_create_record: {}", res);
     }
 }
