@@ -15,7 +15,7 @@ tauri-build = { version = "1.4.0", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.4.0", features = ["system-tray"] }
+tauri = { version = "1.4.0", features = [ "dialog-all", "system-tray"] }
 chrono = "0.4.23"
 log = "0.4"
 lazy_static = "1.4.0"

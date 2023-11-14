@@ -1,38 +1,43 @@
 import React, {useEffect, useState} from 'react';
 import VirtualList from 'rc-virtual-list';
 import {List, message} from 'antd';
-import {invoke} from "@tauri-apps/api";
-import {find_records_by_pages_command} from "@/utils/consts";
-import Record from "@/models/Record";
+import {getRecordByPage} from "@/utils/graphql";
+import {RecordDocument} from "@/types";
 
 const ContainerHeight = 600;
 const PageSize = 10;
 
 export default function RecordList() {
 
-    const [data, setData] = useState<Record[]>([]);
-    const [pageCount, setPageCount] = useState(0);
+    const [data, setData] = useState<RecordDocument[]>([]);
+    const [endCursor, setEndCursor] = useState<string>("");
 
-    const appendData = () => {
-        invoke(find_records_by_pages_command, {
-            limit: PageSize,
-            offset: pageCount * PageSize
-        }).then((res) => {
-            let records = res as Record[];
+    const appendData = async () => {
+        try {
+            let res = await getRecordByPage(PageSize, endCursor === "" ? null : endCursor, [0, 1]);
+            console.log(`res: ${res}`);
 
-            if (records.length <= 0) {
+            if (!res || !res.documents || res.documents.length <= 0) {
                 message.warning("No records found!")
                 return;
             }
 
-            setData(data.concat(records));
-            setPageCount((pageCount) => {
-                return pageCount + 1;
+            let documents = res.documents;
+            for (let document of documents) {
+                if (document.fields.data_type === "text") {
+                    document.fields.content = atob(document.fields.content);
+                    document.fields.content_preview = atob(document.fields.content_preview);
+                }
+            }
+
+            setData(data.concat(documents));
+            setEndCursor(() => {
+                return res.endCursor;
             });
-            message.success(`${records.length} more items loaded!`);
-        }).catch(err => {
+            message.success(`${documents.length} more items loaded!`);
+        } catch (err) {
             message.error(`load more items failed: ${err}`);
-        });
+        }
     };
 
     useEffect(() => {
@@ -54,13 +59,13 @@ export default function RecordList() {
                 itemKey="email"
                 onScroll={onScroll}
             >
-                {(item: Record) => (
-                    <List.Item key={item.id}>
+                {(item: RecordDocument) => (
+                    <List.Item key={item.fields.md5}>
                         <List.Item.Meta
-                            title={item.content_preview}
-                            description={item.create_time}
+                            title={item.fields.content_preview}
+                            description={item.fields.create_time}
                         />
-                        <div>{item.content_preview}</div>
+                        <div>{item.fields.content_preview}</div>
                     </List.Item>
                 )}
             </VirtualList>

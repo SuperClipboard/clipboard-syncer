@@ -1,4 +1,8 @@
-import ImageData from "@/models/ImageData";
+export type ImageData = {
+    width: number,
+    height: number,
+    base64: string,
+};
 
 export function parseImageData(imageData: string): ImageData {
     return JSON.parse(imageData) as ImageData;

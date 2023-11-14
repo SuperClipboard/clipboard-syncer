@@ -1,8 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use aquadoggo::Node;
 use dotenv::dotenv;
-use log::info;
+use log::{error, info};
+use tauri::async_runtime::block_on;
 use tauri::{App, Manager};
 
 use app::listener::clipboard::ClipboardListener;
@@ -17,7 +19,9 @@ fn main() {
 
     // Step 0: Create and setup application
     let app = tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            app::command::config::graphql_endpoint,
+        ])
         .setup(|app| {
             setup(app);
             Ok(())
@@ -55,10 +59,17 @@ fn setup(app: &mut App) {
     handler::global_handler::GlobalHandler::global().init(app.app_handle());
 
     // Start sync server
-    tauri::async_runtime::spawn(async move {
-        let node = NodeServer::start().await.unwrap();
-        node.on_exit().await;
+    let mut node: Option<Node> = None;
+    block_on(async {
+        node = Some(NodeServer::start().await.unwrap());
     });
+    if let Some(node) = node {
+        tauri::async_runtime::spawn(async move {
+            node.on_exit().await;
+        });
+    } else {
+        error!("Start node server failed!")
+    }
 
     // Start global application listener
     GlobalEventListener::register_all_global_listeners(app).unwrap();

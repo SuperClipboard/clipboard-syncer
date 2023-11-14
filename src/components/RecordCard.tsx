@@ -1,10 +1,10 @@
 import "@/css/RecoardCard.css"
 import {emit} from '@tauri-apps/api/event';
-import Record, {RecordDataTypeEnum} from "@/models/Record";
 import React from "react";
-import {EventListenerEnum} from "@/models/EventListenerEnum";
 import {Button, Image} from "antd";
 import {base64ToImage, parseImageData} from "@/utils/image";
+import {EventListenerEnum} from "@/utils/consts";
+import {RecordDataTypeEnum, Record} from "@/types";
 
 interface RecordCardProps {
     data: Record,
