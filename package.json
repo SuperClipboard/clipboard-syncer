@@ -10,6 +10,7 @@
     "antd": "^5.8.5",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
+    "js-base64": "^3.7.5",
     "rc-virtual-list": "^3.11.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -4,7 +4,7 @@ import React from "react";
 import {Button, Image} from "antd";
 import {base64ToImage, parseImageData} from "@/utils/image";
 import {EventListenerEnum} from "@/utils/consts";
-import {RecordDataTypeEnum, Record} from "@/types";
+import {RecordDataTypeEnum, Record} from "@/models/Record";
 
 interface RecordCardProps {
     data: Record,

@@ -6,6 +6,7 @@ use dotenv::dotenv;
 use log::{error, info};
 use tauri::async_runtime::block_on;
 use tauri::{App, Manager};
+use window_shadows::set_shadow;
 
 use app::listener::clipboard::ClipboardListener;
 use app::listener::global_event_listener::GlobalEventListener;
@@ -23,7 +24,9 @@ fn main() {
             app::command::config::graphql_endpoint,
         ])
         .setup(|app| {
-            setup(app);
+            let window = app.get_window("main").unwrap();
+            set_shadow(&window, true).expect("Unsupported platform!");
+            setup_service(app);
             Ok(())
         });
 
@@ -50,7 +53,7 @@ fn main() {
     });
 }
 
-fn setup(app: &mut App) {
+fn setup_service(app: &mut App) {
     // Make the docker NOT to have an active app when started
     #[cfg(target_os = "macos")]
     app.set_activation_policy(tauri::ActivationPolicy::Accessory);

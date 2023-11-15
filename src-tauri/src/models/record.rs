@@ -4,6 +4,7 @@ pub const SCHEMA_ID: &str =
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Record {
     pub content: String,
+    // 文字为空，图片为缩略图
     pub content_preview: Option<String>,
     // data_type(文本=text、图片=image)
     pub data_type: String,

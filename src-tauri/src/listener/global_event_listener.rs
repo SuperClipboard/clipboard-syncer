@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 use tauri::{App, Manager};
 
 #[derive(Debug)]
@@ -24,7 +25,7 @@ impl GlobalEventListener {
 
     fn change_clipboard_listener(app: &mut App) -> Result<()> {
         app.listen_global(EventListenTypeEnum::ChangeClipBoard, |e| {
-            println!(
+            info!(
                 "got {:?} with payload {:?}",
                 EventListenTypeEnum::ChangeClipBoard,
                 e.payload()

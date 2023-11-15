@@ -11,9 +11,13 @@
     "version": "0.1.0"
   },
   "tauri": {
+    "macOSPrivateApi": true,
     "allowlist": {
       "all": false,
       "dialog": {
+        "all": true
+      },
+      "window": {
         "all": true
       }
     },
@@ -59,10 +63,13 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
-        "resizable": true,
+        "resizable": false,
+        "center": true,
         "title": "clipboard-syncer",
-        "width": 400
+        "width": 880,
+        "height": 450,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "systemTray": {

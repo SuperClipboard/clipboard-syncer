@@ -17,22 +17,21 @@ impl ClipboardListener {
     // Check clipboard content in each 1 second
     const WAIT_MILLIS: i64 = 1000;
 
-    const TEXT_PREVIEW_LEN: usize = 100;
+    const TEXT_PREVIEW_LEN: usize = 18;
 
     pub fn listen() {
         tauri::async_runtime::spawn(async {
-            let mut last_content_md5 = String::new();
-            let mut last_img_md5 = String::new();
+            let mut last_md5 = String::new();
             let mut clipboard = Clipboard::new().unwrap();
             info!("start clipboard listener");
 
             loop {
                 let mut need_notify = false;
                 if let Ok(text) = clipboard.get_text() {
-                    Self::handle_text_message(text, &mut last_content_md5, &mut need_notify).await;
+                    Self::handle_text_message(text, &mut last_md5, &mut need_notify).await;
                 }
                 if let Ok(img) = clipboard.get_image() {
-                    Self::handle_image_message(img, &mut last_img_md5, &mut need_notify).await;
+                    Self::handle_image_message(img, &mut last_md5, &mut need_notify).await;
                 }
 
                 need_notify = Self::handle_record_limit().await || need_notify;
@@ -51,19 +50,24 @@ impl ClipboardListener {
         last_content_md5: &mut String,
         need_notify: &mut bool,
     ) {
-        let content_origin = text.clone();
-        let content = text.trim();
-        let md5 = string::md5(&content_origin);
+        let content = text.clone();
+        let md5 = string::md5(&content);
         if !content.is_empty() && md5.ne(last_content_md5) {
             // Has new clip contents
             let content_preview = if content.len() > Self::TEXT_PREVIEW_LEN {
-                Some(content.chars().take(Self::TEXT_PREVIEW_LEN).collect())
+                Some(
+                    content
+                        .chars()
+                        .take(Self::TEXT_PREVIEW_LEN)
+                        .collect::<String>()
+                        + "...",
+                )
             } else {
                 Some(content.to_string())
             };
 
             let data = Record {
-                content: content_origin,
+                content,
                 content_preview,
                 data_type: record::DataTypeEnum::TEXT.into(),
                 latest_addr: local_ip().unwrap().to_string(),

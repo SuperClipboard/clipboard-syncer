@@ -1,8 +1,10 @@
 import React, {useEffect, useState} from 'react';
 import {message} from 'antd';
 import {getRecordByPage} from "@/utils/graphql";
-import {RecordDocument} from "@/types";
 import InfiniteScroll from 'react-infinite-scroll-component';
+import RecordCard from "@/components/RecordCard";
+import {RecordDocument} from "@/models/RecordDocument";
+import {Base64} from "js-base64";
 
 const PageSize = 10;
 
@@ -12,9 +14,9 @@ export default function RecordList() {
     const [data, setData] = useState<RecordDocument[]>([]);
     const [endCursor, setEndCursor] = useState<string>("");
 
-    const appendData = async () => {
+    const fetchRecords = async () => {
         try {
-            let res = await getRecordByPage(PageSize, endCursor === "" ? null : endCursor, [0, 1]);
+            let res = await getRecordByPage(PageSize, endCursor, [0, 1]);
             console.log(`res: ${res}`);
 
             if (!res || !res.documents || res.documents.length <= 0) {
@@ -24,10 +26,8 @@ export default function RecordList() {
 
             let documents = res.documents;
             for (let document of documents) {
-                if (document.fields.data_type === "text") {
-                    document.fields.content = atob(document.fields.content);
-                    document.fields.content_preview = atob(document.fields.content_preview);
-                }
+                document.fields.content = Base64.decode(document.fields.content);
+                document.fields.content_preview = Base64.decode(document.fields.content_preview);
             }
 
             setHasMore(res.hasNextPage);
@@ -40,17 +40,17 @@ export default function RecordList() {
     };
 
     useEffect(() => {
-        appendData();
+        fetchRecords();
     }, []);
 
     return (
         <div id={"record-list-container"}>
             <InfiniteScroll
                 dataLength={data.length}
-                next={appendData}
+                next={fetchRecords}
                 hasMore={hasMore}
                 endMessage={
-                    <p style={{ textAlign: 'center' }}>
+                    <p style={{textAlign: 'center'}}>
                         <b>No record!</b>
                     </p>
                 }
@@ -58,8 +58,9 @@ export default function RecordList() {
             >
                 {
                     data.map(item => (
-                        <div key={item.fields.md5} className='pin'>
-                            <div>{item.fields.content_preview}: {item.fields.create_time}</div>
+                        <div key={item.fields.md5}>
+                            {/*<div>{item.fields.content_preview}: {item.fields.create_time}</div>*/}
+                            <RecordCard data={item.fields}/>
                         </div>
                     ))
                 }
