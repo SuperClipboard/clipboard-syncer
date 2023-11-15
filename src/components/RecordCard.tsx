@@ -33,7 +33,7 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
 
     let clickCopy = (e: React.MouseEvent<HTMLDivElement>) => {
         console.log(e);
-        emit(EventListenerEnum.ChangeClipBoard, {
+        emit(EventListenerEnum.TapChangeClipboardFrontend, {
             message: `Tauri is ok!` + e,
         })
     }

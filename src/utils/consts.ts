@@ -7,7 +7,8 @@ export const DefaultGraphqlEndpoint = "http://localhost:12020/graphql";
 export let GraphqlEndpoint: string;
 
 export enum EventListenerEnum {
-    ChangeClipBoard = "cbs://change-clipboard-listen",
+    ChangeClipboardBackend = "cbs://change-clipboard-backend",
+    TapChangeClipboardFrontend = "cbs://tap-change-clipboard-frontend",
 }
 
 (async () => {

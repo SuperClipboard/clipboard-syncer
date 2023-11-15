@@ -8,6 +8,7 @@ use tauri::async_runtime::block_on;
 use tauri::{App, Manager};
 use window_shadows::set_shadow;
 
+use app::consts::MAIN_WINDOW;
 use app::listener::clipboard::ClipboardListener;
 use app::listener::global_event_listener::GlobalEventListener;
 use app::p2panda::node::NodeServer;
@@ -24,7 +25,7 @@ fn main() {
             app::command::config::graphql_endpoint,
         ])
         .setup(|app| {
-            let window = app.get_window("main").unwrap();
+            let window = app.get_window(MAIN_WINDOW).unwrap();
             set_shadow(&window, true).expect("Unsupported platform!");
             setup_service(app);
             Ok(())

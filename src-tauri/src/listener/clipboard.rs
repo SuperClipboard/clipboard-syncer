@@ -1,11 +1,12 @@
-use crate::config::app_config::AppConfig;
 use arboard::Clipboard;
 use chrono::Duration;
 use local_ip_address::local_ip;
 use log::{debug, error, info};
 
+use crate::config::app_config::AppConfig;
 use crate::dao::record_dao::RecordDao;
-use crate::handler::global_handler::{GlobalHandler, MessageTypeEnum};
+use crate::handler::global_handler::GlobalHandler;
+use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::Record;
@@ -36,8 +37,11 @@ impl ClipboardListener {
 
                 need_notify = Self::handle_record_limit().await || need_notify;
                 if need_notify {
-                    GlobalHandler::push_message_to_window(MessageTypeEnum::ChangeClipBoard, "ok")
-                        .unwrap();
+                    GlobalHandler::push_message_to_window(
+                        MessageTypeEnum::ChangeClipboardBackend,
+                        "Clipboard records changed",
+                    )
+                    .unwrap();
                 }
                 tokio::time::sleep(Duration::milliseconds(Self::WAIT_MILLIS).to_std().unwrap())
                     .await;

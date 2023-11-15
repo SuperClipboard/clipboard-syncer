@@ -1,16 +1,21 @@
+//!
+//! Global event listener listens the event emitted from the frontend!
+//!
 use anyhow::Result;
 use log::info;
 use tauri::{App, Manager};
 
 #[derive(Debug)]
 pub enum EventListenTypeEnum {
-    ChangeClipBoard,
+    TapChangeClipboardFrontend,
 }
 
 impl From<EventListenTypeEnum> for String {
     fn from(value: EventListenTypeEnum) -> Self {
         match value {
-            EventListenTypeEnum::ChangeClipBoard => "cbs://change-clipboard-listen".into(),
+            EventListenTypeEnum::TapChangeClipboardFrontend => {
+                "cbs://tap-change-clipboard-frontend".into()
+            }
         }
     }
 }
@@ -20,14 +25,14 @@ pub struct GlobalEventListener;
 
 impl GlobalEventListener {
     pub fn register_all_global_listeners(app: &mut App) -> Result<()> {
-        Self::change_clipboard_listener(app)
+        Self::tap_change_clipboard_frontend_listener(app)
     }
 
-    fn change_clipboard_listener(app: &mut App) -> Result<()> {
-        app.listen_global(EventListenTypeEnum::ChangeClipBoard, |e| {
+    fn tap_change_clipboard_frontend_listener(app: &mut App) -> Result<()> {
+        app.listen_global(EventListenTypeEnum::TapChangeClipboardFrontend, |e| {
             info!(
                 "got {:?} with payload {:?}",
-                EventListenTypeEnum::ChangeClipBoard,
+                EventListenTypeEnum::TapChangeClipboardFrontend,
                 e.payload()
             );
         });

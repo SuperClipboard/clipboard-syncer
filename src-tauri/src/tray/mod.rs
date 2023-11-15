@@ -1,3 +1,4 @@
+use crate::consts::MAIN_WINDOW;
 use tauri::{Builder, Manager, SystemTrayEvent, Wry};
 use tauri::{CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 
@@ -37,7 +38,7 @@ pub fn register_tray(app: Builder<Wry>) -> Builder<Wry> {
                             std::process::exit(0);
                         }
                         "hide" => {
-                            let window = app.get_window("main").unwrap();
+                            let window = app.get_window(MAIN_WINDOW).unwrap();
                             window.hide().unwrap();
                             // you can also `set_selected`, `set_enabled` and `set_native_image` (macOS only).
                             item_handle.set_title("Show").unwrap();

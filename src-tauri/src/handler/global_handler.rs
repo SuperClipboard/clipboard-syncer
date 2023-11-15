@@ -1,3 +1,6 @@
+//!
+//! Global handler emit the events from backend!
+//!
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -6,12 +9,10 @@ use log::{error, info};
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-#[derive(Debug)]
-pub enum MessageTypeEnum {
-    ChangeClipBoard,
-}
+use crate::consts::MAIN_WINDOW;
+use crate::handler::model::{MessageTypeEnum, Payload};
 
 #[derive(Debug, Default, Clone)]
 pub struct GlobalHandler {
@@ -35,18 +36,34 @@ impl GlobalHandler {
         msg_type: MessageTypeEnum,
         msg: M,
     ) -> Result<()> {
+        match msg_type {
+            MessageTypeEnum::ChangeClipboardBackend => {
+                info!("send ChangeClipBoard message: {:?}", msg);
+                Self::change_clipboard_backend_handler(msg)
+            }
+        }
+    }
+
+    fn change_clipboard_backend_handler<M: Serialize + Clone + Debug>(msg: M) -> Result<()> {
         let app_handle = Self::global().app_handle.lock();
         if app_handle.is_none() {
-            error!("Cannot push message to window: {:?}, {:?}", msg_type, msg);
+            error!(
+                "Cannot push message to window: {:?}, {:?}",
+                MessageTypeEnum::ChangeClipboardBackend,
+                msg
+            );
             bail!("application not initiated, push_message_to_window error");
         }
 
-        // TODO
-        match msg_type {
-            MessageTypeEnum::ChangeClipBoard => {
-                info!("send ChangeClipBoard message: {:?}", msg);
-            }
-        }
+        let window = app_handle
+            .as_ref()
+            .unwrap()
+            .get_window(MAIN_WINDOW)
+            .unwrap();
+        window.emit_all(
+            &String::from(MessageTypeEnum::ChangeClipboardBackend),
+            Payload { message: msg },
+        )?;
 
         Ok(())
     }

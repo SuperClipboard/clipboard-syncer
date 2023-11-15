@@ -69,7 +69,8 @@
         "width": 880,
         "height": 450,
         "decorations": false,
-        "transparent": true
+        "transparent": true,
+        "alwaysOnTop": true
       }
     ],
     "systemTray": {
