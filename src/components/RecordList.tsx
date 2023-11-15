@@ -1,14 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import VirtualList from 'rc-virtual-list';
-import {List, message} from 'antd';
+import {message} from 'antd';
 import {getRecordByPage} from "@/utils/graphql";
 import {RecordDocument} from "@/types";
+import InfiniteScroll from 'react-infinite-scroll-component';
 
-const ContainerHeight = 600;
 const PageSize = 10;
 
 export default function RecordList() {
 
+    const [hasMore, setHasMore] = useState(false);
     const [data, setData] = useState<RecordDocument[]>([]);
     const [endCursor, setEndCursor] = useState<string>("");
 
@@ -30,10 +30,9 @@ export default function RecordList() {
                 }
             }
 
+            setHasMore(res.hasNextPage);
             setData(data.concat(documents));
-            setEndCursor(() => {
-                return res.endCursor;
-            });
+            setEndCursor(res.endCursor);
             message.success(`${documents.length} more items loaded!`);
         } catch (err) {
             message.error(`load more items failed: ${err}`);
@@ -44,31 +43,27 @@ export default function RecordList() {
         appendData();
     }, []);
 
-    const onScroll = (e: React.UIEvent<HTMLElement, UIEvent>) => {
-        if (e.currentTarget.scrollHeight - e.currentTarget.scrollTop === ContainerHeight) {
-            appendData();
-        }
-    };
-
     return (
-        <List>
-            <VirtualList
-                data={data}
-                height={ContainerHeight}
-                itemHeight={47}
-                itemKey="email"
-                onScroll={onScroll}
+        <div id={"record-list-container"}>
+            <InfiniteScroll
+                dataLength={data.length}
+                next={appendData}
+                hasMore={hasMore}
+                endMessage={
+                    <p style={{ textAlign: 'center' }}>
+                        <b>No record!</b>
+                    </p>
+                }
+                loader={<h4>Loading...</h4>}
             >
-                {(item: RecordDocument) => (
-                    <List.Item key={item.fields.md5}>
-                        <List.Item.Meta
-                            title={item.fields.content_preview}
-                            description={item.fields.create_time}
-                        />
-                        <div>{item.fields.content_preview}</div>
-                    </List.Item>
-                )}
-            </VirtualList>
-        </List>
+                {
+                    data.map(item => (
+                        <div key={item.fields.md5} className='pin'>
+                            <div>{item.fields.content_preview}: {item.fields.create_time}</div>
+                        </div>
+                    ))
+                }
+            </InfiniteScroll>
+        </div>
     );
 }
