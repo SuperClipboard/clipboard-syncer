@@ -44,7 +44,7 @@ impl GlobalHandler {
         }
     }
 
-    fn change_clipboard_backend_handler<M: Serialize + Clone + Debug>(msg: M) -> Result<()> {
+    pub fn change_clipboard_backend_handler<M: Serialize + Clone + Debug>(msg: M) -> Result<()> {
         let app_handle = Self::global().app_handle.lock();
         if app_handle.is_none() {
             error!(

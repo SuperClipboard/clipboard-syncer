@@ -6,17 +6,18 @@ import {base64ToImage, parseImageData} from "@/utils/image";
 import {EventListenerEnum} from "@/utils/consts";
 import {Record, RecordDataTypeEnum} from "@/models/Record";
 import {Base64} from "js-base64";
+import {RecordDocument} from "@/models/RecordDocument";
 
 interface RecordCardProps {
-    data: Record,
+    data: RecordDocument,
 }
 
 interface RecordCardPropsLeft {
-    data: Record,
+    data: RecordDocument,
 }
 
 interface RecordCardPropsRight {
-    isFavorite: number,
+    data: RecordDocument,
 }
 
 interface TapChangeClipboardFrontendMessage {
@@ -24,21 +25,25 @@ interface TapChangeClipboardFrontendMessage {
     data_type: string,
 }
 
+interface DeleteClipboardRecordFrontendMessage {
+    view_id: string,
+}
+
 export default function RecordCard(props: RecordCardProps) {
     return (
         <div className={"RecordCard"}>
             <RecordCardLeft data={props.data}/>
-            <RecordCardRight isFavorite={props.data?.is_favorite || 0}/>
+            <RecordCardRight data={props.data}/>
         </div>
     )
 }
 
 function RecordCardLeft(props: RecordCardPropsLeft) {
 
-    const isImage = props.data.data_type === RecordDataTypeEnum.Image;
+    const isImage = props.data.fields.data_type === RecordDataTypeEnum.Image;
 
-    let clickCopy = (e: React.MouseEvent<HTMLDivElement>, record: Record) => {
-        console.debug(e, record);
+    let clickCopy = (_: React.MouseEvent<HTMLDivElement>, record: Record) => {
+        console.debug(record);
 
         let content = record.content;
         if (record.data_type === RecordDataTypeEnum.Image) {
@@ -47,7 +52,7 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
             content = Base64.encode(content);
         }
 
-        let payload : TapChangeClipboardFrontendMessage = {
+        let payload: TapChangeClipboardFrontendMessage = {
             content: content,
             data_type: record.data_type
         };
@@ -55,14 +60,14 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
     }
 
     return (
-        <div className={"RecordCardLeft"} onClick={(e) => clickCopy(e, props.data)}>
+        <div className={"RecordCardLeft"} onClick={(e) => clickCopy(e, props.data.fields)}>
             {
                 isImage ? (
                     <Image
-                        src={URL.createObjectURL(base64ToImage((parseImageData(props.data.content_preview).base64)))}
+                        src={URL.createObjectURL(base64ToImage((parseImageData(props.data.fields.content_preview).base64)))}
                         preview={false}/>
                 ) : (
-                    <p>{props.data.content_preview}</p>
+                    <p>{props.data.fields.content_preview}</p>
                 )
             }
         </div>
@@ -71,13 +76,21 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
 
 function RecordCardRight(props: RecordCardPropsRight) {
 
-    let deleteRecord = (e: React.MouseEvent<HTMLDivElement>) => {
-        console.log('mock delete record', e);
+    let deleteRecord = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
+        console.debug(`delete record emit view id: ${doc.meta.viewId}`);
+
+        let payload: DeleteClipboardRecordFrontendMessage = {
+            view_id: doc.meta.viewId,
+        };
+
+        emit(EventListenerEnum.DeleteClipboardRecordFrontend, payload);
     }
 
     return (
         <div className={"RecordCardRight"}>
-            <Button type={"primary"} ghost={true} danger={true} size={"small"} onClick={deleteRecord}>x</Button>
+            <Button type={"primary"} ghost={true} danger={true} size={"small"} onClick={(e) => {
+                deleteRecord(e, props.data)
+            }}>x</Button>
         </div>
     );
 }

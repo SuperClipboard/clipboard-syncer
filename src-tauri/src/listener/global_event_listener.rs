@@ -5,9 +5,14 @@ use anyhow::Result;
 use log::{debug, error, warn};
 use tauri::{App, Manager};
 
-use crate::listener::model::{EventListenTypeEnum, TapChangeClipboardFrontendMessage};
+use crate::handler::global_handler::GlobalHandler;
+use crate::listener::model::{
+    DeleteClipboardRecordFrontendMessage, EventListenTypeEnum, TapChangeClipboardFrontendMessage,
+};
 use crate::models::image_data::ImageData;
+use crate::models::record;
 use crate::models::record::DataTypeEnum;
+use crate::p2panda::graphql::GraphQLHandler;
 use crate::utils::clipboard::ClipBoardOperator;
 use crate::utils::json;
 use crate::utils::string::base64_decode;
@@ -17,7 +22,9 @@ pub struct GlobalEventListener;
 
 impl GlobalEventListener {
     pub fn register_all_global_listeners(app: &mut App) -> Result<()> {
-        Self::tap_change_clipboard_frontend_listener(app)
+        Self::tap_change_clipboard_frontend_listener(app)?;
+        Self::delete_clipboard_record_listener(app)?;
+        Ok(())
     }
 
     fn tap_change_clipboard_frontend_listener(app: &mut App) -> Result<()> {
@@ -93,6 +100,58 @@ impl GlobalEventListener {
             } else {
                 warn!("Unknown data type for the record: {}", record.data_type)
             };
+        });
+
+        Ok(())
+    }
+
+    fn delete_clipboard_record_listener(app: &mut App) -> Result<()> {
+        app.listen_global(EventListenTypeEnum::DeleteClipboardRecordFrontend, |e| {
+            debug!(
+                "got {:?} with payload {:?}",
+                EventListenTypeEnum::DeleteClipboardRecordFrontend,
+                e.payload()
+            );
+
+            let msg = match e.payload() {
+                Some(payload) => {
+                    match serde_json::from_str::<DeleteClipboardRecordFrontendMessage>(payload) {
+                        Ok(record) => record,
+                        Err(err) => {
+                            warn!(
+                                "Parse {:?} event payload failed: {}",
+                                EventListenTypeEnum::DeleteClipboardRecordFrontend,
+                                err
+                            );
+                            return;
+                        }
+                    }
+                }
+                None => {
+                    warn!(
+                        "{:?} event payload is empty",
+                        EventListenTypeEnum::DeleteClipboardRecordFrontend
+                    );
+                    return;
+                }
+            };
+
+            tokio::task::spawn(async move {
+                let handler = &mut GraphQLHandler::global().lock().await;
+                let delete_res = handler
+                    .delete_instance(record::SCHEMA_ID, &msg.view_id)
+                    .await;
+                if delete_res.is_err() {
+                    error!("call delete instance error: {:?}", delete_res.unwrap_err())
+                }
+
+                if let Err(e) = GlobalHandler::change_clipboard_backend_handler(format!(
+                    "delete view_id: {} success",
+                    msg.view_id
+                )) {
+                    error!("send change_clipboard_backend message err: {:?}", e)
+                };
+            });
         });
 
         Ok(())

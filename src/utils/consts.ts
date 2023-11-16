@@ -9,6 +9,7 @@ export let GraphqlEndpoint: string;
 export enum EventListenerEnum {
     ChangeClipboardBackend = "cbs://change-clipboard-backend",
     TapChangeClipboardFrontend = "cbs://tap-change-clipboard-frontend",
+    DeleteClipboardRecordFrontend = "cbs://delete-clipboard-record-frontend",
 }
 
 (async () => {

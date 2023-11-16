@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug)]
 pub enum EventListenTypeEnum {
     TapChangeClipboardFrontend,
+    DeleteClipboardRecordFrontend,
 }
 
 impl From<EventListenTypeEnum> for String {
@@ -10,6 +11,9 @@ impl From<EventListenTypeEnum> for String {
         match value {
             EventListenTypeEnum::TapChangeClipboardFrontend => {
                 "cbs://tap-change-clipboard-frontend".into()
+            }
+            EventListenTypeEnum::DeleteClipboardRecordFrontend => {
+                "cbs://delete-clipboard-record-frontend".into()
             }
         }
     }
@@ -19,4 +23,9 @@ impl From<EventListenTypeEnum> for String {
 pub(crate) struct TapChangeClipboardFrontendMessage {
     pub(crate) content: String,
     pub(crate) data_type: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub(crate) struct DeleteClipboardRecordFrontendMessage {
+    pub(crate) view_id: String,
 }

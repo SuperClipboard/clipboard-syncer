@@ -111,8 +111,7 @@ export default function RecordList() {
                 {
                     data.map(item => (
                         <div key={item.fields.md5}>
-                            {/*<div>{item.fields.content_preview}: {item.fields.create_time}</div>*/}
-                            <RecordCard data={item.fields}/>
+                            <RecordCard data={item}/>
                         </div>
                     ))
                 }
