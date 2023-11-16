@@ -11,7 +11,7 @@ use crate::graphql::{
 };
 use crate::models::record;
 use crate::models::record::Record;
-use crate::p2panda::graphql::{field, GraphQLHandler};
+use crate::p2panda::graphql::{field, GraphQLHandler, StringTuple};
 use crate::utils::string;
 use crate::utils::string::base64_encode;
 
@@ -33,7 +33,14 @@ impl RecordDao {
             }
             // find record
             _ => {
-                Self::update_record_create_time(&res[0], now).await?;
+                Self::update_record_with_fields(
+                    &res[0].meta.as_ref().unwrap().view_id.to_string(),
+                    &mut [
+                        field("create_time", &now.to_string()),
+                        field("latest_addr", &local_ip().unwrap().to_string()),
+                    ],
+                )
+                .await?;
                 debug!("update record successfully: {:?}", r);
             }
         };
@@ -87,6 +94,18 @@ impl RecordDao {
                 .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
                 .documents),
         }
+    }
+
+    pub async fn update_record_with_fields(
+        view_id: &str,
+        fields: &mut [StringTuple],
+    ) -> Result<String> {
+        let handler = &mut GraphQLHandler::global().lock().await;
+        let res = handler
+            .update_instance(record::SCHEMA_ID, view_id, fields)
+            .await?;
+        info!("update record success, opt id: {}", res);
+        Ok(res)
     }
 
     // Delete record with over limit
@@ -175,25 +194,6 @@ impl RecordDao {
                 .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
                 .documents),
         }
-    }
-
-    async fn update_record_create_time(record: &GraphRecordDocuments, now: i32) -> Result<String> {
-        let handler = &mut GraphQLHandler::global().lock().await;
-
-        let res = handler
-            .update_instance(
-                record::SCHEMA_ID,
-                &record.meta.as_ref().unwrap().view_id.to_string(),
-                &mut [
-                    field("create_time", &now.to_string()),
-                    field("latest_addr", &local_ip().unwrap().to_string()),
-                ],
-            )
-            .await?;
-
-        info!("update record create time success, opt id: {}", res);
-
-        Ok(res)
     }
 
     async fn batch_delete_record(need_delete_records: Vec<GraphRecordPageDocuments>) -> Result<()> {

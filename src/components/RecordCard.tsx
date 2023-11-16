@@ -1,12 +1,12 @@
 import "@/css/RecoardCard.css"
-import {emit} from '@tauri-apps/api/event';
-import React from "react";
-import {Button, Image} from "antd";
+import React, {useState} from "react";
+import {Button, Image, message} from "antd";
 import {base64ToImage, parseImageData} from "@/utils/image";
-import {EventListenerEnum} from "@/utils/consts";
+import {CommandEnum} from "@/utils/consts";
 import {Record, RecordDataTypeEnum} from "@/models/Record";
 import {Base64} from "js-base64";
 import {RecordDocument} from "@/models/RecordDocument";
+import {invoke} from "@tauri-apps/api";
 
 interface RecordCardProps {
     data: RecordDocument,
@@ -18,15 +18,6 @@ interface RecordCardPropsLeft {
 
 interface RecordCardPropsRight {
     data: RecordDocument,
-}
-
-interface TapChangeClipboardFrontendMessage {
-    content: string,
-    data_type: string,
-}
-
-interface DeleteClipboardRecordFrontendMessage {
-    view_id: string,
 }
 
 export default function RecordCard(props: RecordCardProps) {
@@ -52,15 +43,16 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
             content = Base64.encode(content);
         }
 
-        let payload: TapChangeClipboardFrontendMessage = {
+        invoke(CommandEnum.TapChangeClipboardCommand, {
             content: content,
-            data_type: record.data_type
-        };
-        emit(EventListenerEnum.TapChangeClipboardFrontend, payload);
+            dataType: record.data_type
+        }).catch(e => {
+            message.error(`change clipboard record failed: ${e}`);
+        });
     }
 
     return (
-        <div className={"RecordCardLeft"} onClick={(e) => clickCopy(e, props.data.fields)}>
+        <div className={"record-card-left"} onClick={(e) => clickCopy(e, props.data.fields)}>
             {
                 isImage ? (
                     <Image
@@ -76,21 +68,61 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
 
 function RecordCardRight(props: RecordCardPropsRight) {
 
+    const [isFavorite, setIsFavorite] = useState(props.data.fields.is_favorite);
+
     let deleteRecord = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
         console.debug(`delete record emit view id: ${doc.meta.viewId}`);
 
-        let payload: DeleteClipboardRecordFrontendMessage = {
-            view_id: doc.meta.viewId,
-        };
+        invoke(CommandEnum.DeleteRecordCommand, {
+            viewId: doc.meta.viewId
+        }).catch(e => {
+            message.error(`delete record failed: ${e}`);
+        });
+    }
 
-        emit(EventListenerEnum.DeleteClipboardRecordFrontend, payload);
+    let toggleFavorite = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
+
+        invoke(CommandEnum.ToggleFavoriteRecordCommand, {
+            viewId: doc.meta.viewId,
+            oldFavorite: doc.fields.is_favorite,
+        }).then(() => {
+            setIsFavorite(old_state => {
+                if (old_state === 0) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+        }).catch(e => {
+            message.error(`toggle record favorite failed: ${e}`);
+        });
     }
 
     return (
-        <div className={"RecordCardRight"}>
-            <Button type={"primary"} ghost={true} danger={true} size={"small"} onClick={(e) => {
-                deleteRecord(e, props.data)
-            }}>x</Button>
+        <div className={"record-card-right"}>
+            <Button
+                type={"text"}
+                ghost={true}
+                danger={true}
+                size={"middle"}
+                shape={"circle"}
+                className={"record-favorite-button"}
+                onClick={(e) => {
+                    toggleFavorite(e, props.data)
+                }}>
+                {
+                    isFavorite ? (<span>★</span>) : (<span>☆</span>)
+                }
+            </Button>
+            <Button type={"text"}
+                    ghost={true}
+                    danger={true}
+                    size={"middle"}
+                    className={"record-delete-button"}
+                    onClick={(e) => {
+                        deleteRecord(e, props.data)
+                    }
+                    }>×</Button>
         </div>
     );
 }

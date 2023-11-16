@@ -1,4 +1,4 @@
-import {DefaultGraphqlEndpoint, GraphqlEndpointCommand} from "@/utils/consts";
+import {CommandEnum, DefaultGraphqlEndpoint} from "@/utils/consts";
 import React, { createContext, useState, useEffect } from 'react';
 import {invoke} from "@tauri-apps/api";
 
@@ -19,7 +19,7 @@ export const GlobalContextProvider: React.FC<Props> = ({ children }) => {
 
     useEffect(() => {
         async function fetchData() {
-            const result = await invoke(GraphqlEndpointCommand) as string; // 调用异步函数以获取返回值
+            const result = await invoke(CommandEnum.GraphqlEndpointCommand) as string; // 调用异步函数以获取返回值
             setGraphqlEndpoint(result); // 使用返回值来初始化全局变量
         }
 

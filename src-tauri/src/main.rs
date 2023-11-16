@@ -23,6 +23,9 @@ fn main() {
     let app = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             app::command::config::graphql_endpoint,
+            app::command::record::tap_change_clipboard,
+            app::command::record::delete_record,
+            app::command::record::toggle_favorite_record,
         ])
         .setup(|app| {
             let window = app.get_window(MAIN_WINDOW).unwrap();
