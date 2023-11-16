@@ -1,69 +1,122 @@
 import React, {useEffect, useState} from 'react';
-import VirtualList from 'rc-virtual-list';
-import {List, message} from 'antd';
-import {invoke} from "@tauri-apps/api";
-import {find_records_by_pages_command} from "@/utils/consts";
-import Record from "@/models/Record";
+import {message} from 'antd';
+import {getRecordByPage} from "@/utils/graphql";
+import InfiniteScroll from 'react-infinite-scroll-component';
+import RecordCard from "@/components/RecordCard";
+import {RecordDocument} from "@/models/RecordDocument";
+import {Base64} from "js-base64";
+import {listen, UnlistenFn} from "@tauri-apps/api/event";
+import {EventListenerEnum} from "@/utils/consts";
 
-const ContainerHeight = 600;
 const PageSize = 10;
 
 export default function RecordList() {
 
-    const [data, setData] = useState<Record[]>([]);
-    const [pageCount, setPageCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [data, setData] = useState<RecordDocument[]>([]);
+    const [endCursor, setEndCursor] = useState<string>("");
 
-    const appendData = () => {
-        invoke(find_records_by_pages_command, {
-            limit: PageSize,
-            offset: pageCount * PageSize
-        }).then((res) => {
-            let records = res as Record[];
+    const fetchRecords = async () => {
+        try {
+            let res = await getRecordByPage(PageSize, endCursor, [0, 1]);
+            console.log(`res: ${res}`);
 
-            if (records.length <= 0) {
+            if (!res || !res.documents || res.documents.length <= 0) {
                 message.warning("No records found!")
                 return;
             }
 
-            setData(data.concat(records));
-            setPageCount((pageCount) => {
-                return pageCount + 1;
-            });
-            message.success(`${records.length} more items loaded!`);
-        }).catch(err => {
+            let documents = res.documents;
+            for (let document of documents) {
+                document.fields.content = Base64.decode(document.fields.content);
+                document.fields.content_preview = Base64.decode(document.fields.content_preview);
+            }
+
+            setHasMore(res.hasNextPage);
+            setData(data.concat(documents));
+            setEndCursor(res.endCursor);
+            message.success(`${documents.length} more items loaded!`);
+        } catch (err) {
             message.error(`load more items failed: ${err}`);
-        });
-    };
-
-    useEffect(() => {
-        appendData();
-    }, []);
-
-    const onScroll = (e: React.UIEvent<HTMLElement, UIEvent>) => {
-        if (e.currentTarget.scrollHeight - e.currentTarget.scrollTop === ContainerHeight) {
-            appendData();
         }
     };
 
+    const clipboardChangeListener = async (): Promise<UnlistenFn> => {
+        return listen(EventListenerEnum.ChangeClipboardBackend, async (event) => {
+            console.debug(`Got ChangeClipboardBackend event: ${event}`);
+
+            try {
+                let res = await getRecordByPage(PageSize, "", [0, 1]);
+                console.log(`res: ${res}`);
+
+                if (!res || !res.documents || res.documents.length <= 0) {
+                    message.warning("No records found!")
+                    setHasMore(false);
+                    setData([]);
+                    setEndCursor("");
+                    return;
+                }
+
+                let documents = res.documents;
+                for (let document of documents) {
+                    document.fields.content = Base64.decode(document.fields.content);
+                    document.fields.content_preview = Base64.decode(document.fields.content_preview);
+                }
+
+                setHasMore(res.hasNextPage);
+                setData(documents);
+                setEndCursor(res.endCursor);
+                console.log(`${documents.length} more items loaded!`);
+            } catch (err) {
+                message.error(`load more items failed: ${err}`);
+            }
+        });
+    }
+
+    const handleEventErr = (event: string, msg: string) => {
+        message.error(`handle event: ${event} err: ${msg}`);
+    }
+
+    useEffect(() => {
+        const unlistenFns: UnlistenFn[] = [];
+
+        clipboardChangeListener()
+            .then((ulf) => {
+                unlistenFns.push(ulf);
+            })
+            .catch((err) => {
+                handleEventErr(EventListenerEnum.ChangeClipboardBackend, err.message)
+            });
+
+        fetchRecords();
+
+        return () => {
+            for (const ulf of unlistenFns) ulf();
+        };
+    }, []);
+
     return (
-        <List>
-            <VirtualList
-                data={data}
-                height={ContainerHeight}
-                itemHeight={47}
-                itemKey="email"
-                onScroll={onScroll}
+        <div id={"record-list-container"}>
+            <InfiniteScroll
+                dataLength={data.length}
+                next={fetchRecords}
+                hasMore={hasMore}
+                endMessage={
+                    <p style={{textAlign: 'center'}}>
+                        <b>No record!</b>
+                    </p>
+                }
+                loader={<h4>Loading...</h4>}
             >
-                {(item: Record) => (
-                    <List.Item key={item.id}>
-                        <List.Item.Meta
-                            title={item.content_preview}
-                            description={item.create_time}
-                        />
-                        <div>{item.content_preview}</div>
-                    </List.Item>
-                )}
-            </VirtualList>
-        </List>
+                {
+                    data.map(item => (
+                        <div key={item.fields.md5}>
+                            {/*<div>{item.fields.content_preview}: {item.fields.create_time}</div>*/}
+                            <RecordCard data={item.fields}/>
+                        </div>
+                    ))
+                }
+            </InfiniteScroll>
+        </div>
     );
 }

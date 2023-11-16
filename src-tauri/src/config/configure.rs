@@ -14,6 +14,7 @@ use crate::utils::json;
 pub struct Configure {
     pub store_limit: Option<u32>,
     pub sync_port: Option<String>,
+    pub graphql_port: Option<String>,
     pub record_limit_threshold: Option<usize>,
     pub sync_server_addr_list: Option<HashSet<String>>,
 }
@@ -22,7 +23,8 @@ impl Default for Configure {
     fn default() -> Self {
         Self {
             store_limit: Some(100),
-            sync_port: Some("18888".to_string()),
+            sync_port: Some("12022".to_string()),
+            graphql_port: Some("12020".to_string()),
             record_limit_threshold: Some(50),
             sync_server_addr_list: Some(HashSet::new()),
         }
@@ -79,6 +81,7 @@ impl Configure {
         }
         merge!(store_limit);
         merge!(sync_port);
+        merge!(graphql_port);
         merge!(record_limit_threshold);
         merge!(sync_server_addr_list);
     }

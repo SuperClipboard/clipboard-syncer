@@ -1,0 +1,73 @@
+query RecordByMd5Query($md5: String!) {
+    all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f(filter: {md5: {eq: $md5}}) {
+        documents {
+            fields {
+                content
+                content_preview
+                data_type
+                md5
+                create_time
+                is_favorite
+                tags
+                latest_addr
+                is_deleted
+            }
+            meta {
+                documentId
+                viewId
+                owner
+            }
+        }
+    }
+}
+
+query RecordCounts($favorite_filter: [Int!] = [0, 1]) {
+    all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f(
+        filter: {
+            is_deleted: {eq: 0},
+            is_favorite: {in: $favorite_filter}
+        })
+    {
+        totalCount
+    }
+}
+
+query RecordByPages(
+    $limit: Int = 10,
+    $start_cursor: Cursor,
+    $favorite_filter: [Int!] = [0, 1],
+    $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy,
+    $order_dir: OrderDirection,
+) {
+    all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f(
+        orderBy: $order_by,
+        orderDirection: $order_dir,
+        first: $limit,
+        after: $start_cursor,
+        filter: {
+            is_favorite: {in: $favorite_filter}
+        }
+    ) {
+        documents {
+            fields {
+                content
+                content_preview
+                data_type
+                md5
+                create_time
+                is_favorite
+                tags
+                latest_addr
+                is_deleted
+            }
+            meta {
+                documentId
+                viewId
+                owner
+            }
+        }
+        hasNextPage
+        endCursor
+        totalCount
+    }
+}

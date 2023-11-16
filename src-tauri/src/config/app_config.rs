@@ -24,7 +24,12 @@ impl AppConfig {
 
             if patch.sync_port.is_some() && old_cfg.sync_port.ne(&patch.sync_port) {
                 // todo
-                info!("Config sync_port changed, need restart the rpc server");
+                info!("Config sync_port changed, need restart the node");
+            }
+
+            if patch.graphql_port.is_some() && old_cfg.graphql_port.ne(&patch.graphql_port) {
+                // todo
+                info!("Config graphql_port changed, need restart the node");
             }
 
             if patch.record_limit_threshold.is_some()
@@ -93,6 +98,7 @@ mod tests {
         AppConfig::modify_config(Configure {
             store_limit: Some(101),
             sync_port: None,
+            graphql_port: None,
             record_limit_threshold: Some(51),
             sync_server_addr_list: Some(HashSet::from(["127.0.0.1".to_string()])),
         })

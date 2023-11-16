@@ -1,13 +1,9 @@
-import {invoke} from "@tauri-apps/api";
-import {find_records_by_pages_command} from "@/utils/consts";
-
-export enum RecordDataTypeEnum {
-    Text = "text",
-    Image = "image",
+export const RecordDataTypeEnum = {
+    Text: "text",
+    Image: "image",
 }
 
-export default interface Record {
-    id: number,
+export type Record = {
     content: string,
     content_preview: string,
     // data_type(文本=text、图片=image)
@@ -17,4 +13,5 @@ export default interface Record {
     is_favorite: number,
     tags: string[],
     latest_addr: string,
+    is_deleted: number,
 }

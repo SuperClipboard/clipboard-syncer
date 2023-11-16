@@ -23,3 +23,15 @@
 
 .RecordCard > .RecordCardRight > Button {
 }
+
+
+.search-results {
+    margin-top: 10px;
+}
+
+.result-item {
+    padding: 10px;
+    background-color: rgba(200, 200, 200, 0.5);
+    border-radius: 5px;
+    margin-bottom: 10px;
+}

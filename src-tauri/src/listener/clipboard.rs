@@ -1,16 +1,15 @@
-use std::thread;
-
 use arboard::Clipboard;
 use chrono::Duration;
 use local_ip_address::local_ip;
-use log::{error, info};
+use log::{debug, error, info};
 
+use crate::config::app_config::AppConfig;
 use crate::dao::record_dao::RecordDao;
-use crate::handler::global_handler::{GlobalHandler, MessageTypeEnum};
+use crate::handler::global_handler::GlobalHandler;
+use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::Record;
-use crate::sync::syncer::{SyncOptEnum, Syncer};
 use crate::utils::{image, json, string};
 
 pub struct ClipboardListener;
@@ -19,60 +18,67 @@ impl ClipboardListener {
     // Check clipboard content in each 1 second
     const WAIT_MILLIS: i64 = 1000;
 
-    const TEXT_PREVIEW_LEN: usize = 100;
+    const TEXT_PREVIEW_LEN: usize = 18;
 
     pub fn listen() {
         tauri::async_runtime::spawn(async {
-            let mut last_content_md5 = String::new();
-            let mut last_img_md5 = String::new();
+            let mut last_md5 = String::new();
             let mut clipboard = Clipboard::new().unwrap();
             info!("start clipboard listener");
 
             loop {
                 let mut need_notify = false;
-                let text = clipboard.get_text();
-                let _ = text.map(|text| {
-                    Self::handle_text_message(text, &mut last_content_md5, &mut need_notify);
-                });
-
-                let img = clipboard.get_image();
-                let _ = img.map(|img| {
-                    Self::handle_image_message(img, &mut last_img_md5, &mut need_notify);
-                });
-
-                need_notify = Syncer::handle_record_limit() || need_notify;
-                if need_notify {
-                    GlobalHandler::push_message_to_window(MessageTypeEnum::ChangeClipBoard, "ok")
-                        .unwrap();
+                if let Ok(text) = clipboard.get_text() {
+                    Self::handle_text_message(text, &mut last_md5, &mut need_notify).await;
                 }
-                thread::sleep(Duration::milliseconds(Self::WAIT_MILLIS).to_std().unwrap());
+                if let Ok(img) = clipboard.get_image() {
+                    Self::handle_image_message(img, &mut last_md5, &mut need_notify).await;
+                }
+
+                need_notify = Self::handle_record_limit().await || need_notify;
+                if need_notify {
+                    GlobalHandler::push_message_to_window(
+                        MessageTypeEnum::ChangeClipboardBackend,
+                        "Clipboard records changed",
+                    )
+                    .unwrap();
+                }
+                tokio::time::sleep(Duration::milliseconds(Self::WAIT_MILLIS).to_std().unwrap())
+                    .await;
             }
         });
     }
 
-    fn handle_text_message(text: String, last_content_md5: &mut String, need_notify: &mut bool) {
-        let content_origin = text.clone();
-        let content = text.trim();
-        let md5 = string::md5(&content_origin);
+    async fn handle_text_message(
+        text: String,
+        last_content_md5: &mut String,
+        need_notify: &mut bool,
+    ) {
+        let content = text.clone();
+        let md5 = string::md5(&content);
         if !content.is_empty() && md5.ne(last_content_md5) {
             // Has new clip contents
             let content_preview = if content.len() > Self::TEXT_PREVIEW_LEN {
-                Some(content.chars().take(Self::TEXT_PREVIEW_LEN).collect())
+                Some(
+                    content
+                        .chars()
+                        .take(Self::TEXT_PREVIEW_LEN)
+                        .collect::<String>()
+                        + "...",
+                )
             } else {
                 Some(content.to_string())
             };
 
             let data = Record {
-                content: content_origin,
+                content,
                 content_preview,
                 data_type: record::DataTypeEnum::TEXT.into(),
                 latest_addr: local_ip().unwrap().to_string(),
                 ..Default::default()
             };
-            let res = RecordDao::insert_if_not_exist(data.clone());
-            tauri::async_runtime::spawn(async move {
-                Syncer::sync_opt(SyncOptEnum::Add, data.into());
-            });
+            debug!("handle_text_message data: {:?}", data);
+            let res = RecordDao::insert_if_not_exist(data).await;
 
             match res {
                 Ok(_) => {
@@ -86,8 +92,8 @@ impl ClipboardListener {
         }
     }
 
-    fn handle_image_message(
-        img: arboard::ImageData,
+    async fn handle_image_message(
+        img: arboard::ImageData<'_>,
         last_img_md5: &mut String,
         need_notify: &mut bool,
     ) {
@@ -116,10 +122,7 @@ impl ClipboardListener {
                 latest_addr: local_ip().unwrap().to_string(),
                 ..Default::default()
             };
-            let res = RecordDao::insert_if_not_exist(data.clone());
-            tauri::async_runtime::spawn(async move {
-                Syncer::sync_opt(SyncOptEnum::Add, data.into());
-            });
+            let res = RecordDao::insert_if_not_exist(data).await;
             match res {
                 Ok(_) => {
                     drop(img);
@@ -130,6 +133,18 @@ impl ClipboardListener {
                 }
             }
             *last_img_md5 = img_md5;
+        }
+    }
+
+    async fn handle_record_limit() -> bool {
+        let limit = AppConfig::latest().read().store_limit.unwrap();
+        let res = RecordDao::delete_record_with_limit(limit as usize).await;
+        match res {
+            Ok(res) => res,
+            Err(e) => {
+                error!("delete_record_with_limit err: {:?}", e);
+                false
+            }
         }
     }
 }

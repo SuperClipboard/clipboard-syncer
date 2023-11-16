@@ -1,0 +1,13 @@
+[record]
+description = "Clipboard record documents"
+
+[record.fields]
+content = { type = "str" }
+content_preview = { type = "str" }
+data_type = { type = "str" }
+md5 = { type = "str" }
+create_time = { type = "int" }
+is_favorite = { type = "int" }
+tags = { type = "str" }
+latest_addr = { type = "str" }
+is_deleted = { type = "int" }

@@ -1,0 +1,8 @@
+mutation PublishMut($entry: EncodedEntry!, $operation: EncodedOperation!) {
+    publish(entry: $entry, operation: $operation) {
+        logId
+        seqNum
+        skiplink
+        backlink
+    }
+}

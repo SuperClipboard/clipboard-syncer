@@ -3,3 +3,4 @@
 /target/
 clipboard-syncer.sqlite
 src/proto-gen
+schema/secret.txt

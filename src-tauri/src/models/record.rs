@@ -1,26 +1,10 @@
-use diesel::prelude::*;
-use diesel::{Queryable, Selectable};
+pub const SCHEMA_ID: &str =
+    "record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f";
 
-use crate::sync_proto::{SyncMeta, SyncRecord};
-
-#[derive(
-    serde::Serialize,
-    serde::Deserialize,
-    Debug,
-    Clone,
-    Default,
-    PartialEq,
-    Queryable,
-    Selectable,
-    Insertable,
-)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[diesel(primary_key(id))]
-#[diesel(table_name = crate::schema::t_record)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Record {
-    #[diesel(deserialize_as = i32)]
-    pub id: Option<i32>,
     pub content: String,
+    // 文字为空，图片为缩略图
     pub content_preview: Option<String>,
     // data_type(文本=text、图片=image)
     pub data_type: String,
@@ -29,6 +13,7 @@ pub struct Record {
     pub is_favorite: i32,
     pub tags: String,
     pub latest_addr: String,
+    pub is_deleted: i32,
 }
 
 pub enum DataTypeEnum {
@@ -45,67 +30,8 @@ impl From<DataTypeEnum> for String {
     }
 }
 
-impl From<SyncRecord> for Record {
-    fn from(value: SyncRecord) -> Self {
-        Self {
-            id: None,
-            content: value.content,
-            content_preview: value.content_preview,
-            data_type: value.data_type,
-            md5: value.md5,
-            create_time: value.create_time,
-            is_favorite: value.is_favorite,
-            tags: value.tags,
-            latest_addr: value.latest_addr,
-        }
-    }
-}
-
-impl From<Record> for SyncRecord {
-    fn from(value: Record) -> SyncRecord {
-        SyncRecord {
-            content: value.content,
-            content_preview: value.content_preview,
-            data_type: value.data_type,
-            md5: value.md5,
-            create_time: value.create_time,
-            is_favorite: value.is_favorite,
-            tags: value.tags,
-            latest_addr: value.latest_addr,
-        }
-    }
-}
-
-impl From<SyncMeta> for Record {
-    fn from(v: SyncMeta) -> Self {
-        Self {
-            md5: v.md5,
-            create_time: v.create_time,
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Record> for SyncMeta {
-    fn from(value: Record) -> SyncMeta {
-        SyncMeta {
-            md5: value.md5,
-            create_time: value.create_time,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::schema::t_record::dsl::t_record;
-    use crate::storage::sqlite::SQLITE_CLIENT;
-
-    use super::*;
-
     #[test]
-    fn test_select_all() {
-        let c = &mut SQLITE_CLIENT.lock().unwrap().conn;
-        let res = t_record.get_results::<Record>(c);
-        println!("{:#?}", res);
-    }
+    fn test_build() {}
 }
