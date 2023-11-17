@@ -18,7 +18,7 @@ impl ClipboardListener {
     // Check clipboard content in each 1 second
     const WAIT_MILLIS: i64 = 1000;
 
-    const TEXT_PREVIEW_LEN: usize = 18;
+    const TEXT_PREVIEW_LEN: usize = 48;
 
     pub fn listen() {
         tauri::async_runtime::spawn(async {
@@ -61,6 +61,7 @@ impl ClipboardListener {
             let content_preview = if content.len() > Self::TEXT_PREVIEW_LEN {
                 Some(
                     content
+                        .trim()
                         .chars()
                         .take(Self::TEXT_PREVIEW_LEN)
                         .collect::<String>()
