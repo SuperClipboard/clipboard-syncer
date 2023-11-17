@@ -71,7 +71,7 @@
         "decorations": false,
         "transparent": true,
         "visible": true,
-        "alwaysOnTop": false
+        "alwaysOnTop": true
       }
     ],
     "systemTray": {

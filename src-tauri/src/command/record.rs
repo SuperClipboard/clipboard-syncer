@@ -11,38 +11,17 @@ use crate::models::record::DataTypeEnum;
 use crate::utils::clipboard::ClipBoardOperator;
 use crate::utils::ip::local_ip;
 use crate::utils::json;
-use crate::utils::string::base64_decode;
 
 #[tauri::command]
 pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<(), String> {
     debug!("got content: {:?} with data_type {:?}", content, data_type);
     if data_type.eq(&String::from(DataTypeEnum::TEXT)) {
-        let raw_content = base64_decode(&content);
-        let content = match String::from_utf8(raw_content) {
-            Ok(content) => content,
-            Err(err) => {
-                error!(
-                    "Decode base64 data failed, content: {:?}, err: {}",
-                    content, err
-                );
-                return Err(err.to_string());
-            }
-        };
-
         if let Err(e) = ClipBoardOperator::set_text(content) {
             let err_msg = format!("Set text to clipboard err: {}", e);
             error!("{}", err_msg);
             return Err(err_msg);
         };
     } else if data_type.eq(&String::from(DataTypeEnum::IMAGE)) {
-        let raw_image = base64_decode(&content);
-        let content = match String::from_utf8(raw_image) {
-            Ok(content) => content,
-            Err(err) => {
-                error!("Decode base64 data failed, err: {}", err);
-                return Err(err.to_string());
-            }
-        };
         let image_data = match json::parse::<ImageData>(&content) {
             Ok(image_data) => image_data,
             Err(err) => {
