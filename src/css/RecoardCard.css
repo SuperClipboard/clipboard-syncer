@@ -9,21 +9,27 @@
     border-bottom: 1px solid rgb(128, 128, 128);
 }
 
-.RecordCard > .RecordCardLeft {
+.record-card-left {
     flex: 2.5;
     margin-left: 15px;
     cursor: pointer;
     text-align: left;
 }
 
-.RecordCard > .RecordCardRight {
+.record-card-right {
     flex: 1;
     margin-right: 15px;
 }
 
-.RecordCard > .RecordCardRight > Button {
+.record-delete-button {
+    text-align: center;
 }
 
+.record-favorite-button {
+    text-align: center;
+    color: #ffaa00 !important;
+    border-color: #fff !important;
+}
 
 .search-results {
     margin-top: 10px;

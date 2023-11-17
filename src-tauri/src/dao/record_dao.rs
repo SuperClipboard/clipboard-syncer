@@ -1,7 +1,13 @@
+use std::str::FromStr;
+
 use anyhow::Result;
 use graphql_client::{GraphQLQuery, Response};
 use local_ip_address::local_ip;
 use log::{debug, error, info};
+use p2panda_rs::document::DocumentViewId;
+use p2panda_rs::operation::plain::PlainOperation;
+use p2panda_rs::operation::{OperationAction, OperationBuilder, OperationId, OperationValue};
+use p2panda_rs::schema::SchemaId;
 
 use crate::config::app_config::AppConfig;
 use crate::graphql::record_by_pages::OrderDirection;
@@ -9,17 +15,18 @@ use crate::graphql::{
     record_by_md5_query, record_by_pages, record_counts, GraphRecordDocuments, GraphRecordOrderBy,
     GraphRecordPageDocuments, RecordByMd5Query, RecordByPages, RecordCounts,
 };
+use crate::handler::global_handler::GlobalHandler;
+use crate::handler::model::MessageTypeEnum;
 use crate::models::record;
 use crate::models::record::Record;
-use crate::p2panda::graphql::{field, GraphQLHandler};
+use crate::p2panda::graphql::GraphQLHandler;
 use crate::utils::string;
-use crate::utils::string::base64_encode;
 
 pub struct RecordDao;
 
 impl RecordDao {
     pub async fn insert_if_not_exist(mut r: Record) -> Result<()> {
-        let now = chrono::Local::now().timestamp() as i32;
+        let now = chrono::Local::now().timestamp();
         let md5_str = string::md5(r.content.as_str());
         r.md5 = md5_str.clone();
         r.create_time = now;
@@ -33,7 +40,17 @@ impl RecordDao {
             }
             // find record
             _ => {
-                Self::update_record_create_time(&res[0], now).await?;
+                Self::update_record_with_fields(
+                    &OperationId::from_str(&res[0].meta.as_ref().unwrap().view_id)?.into(),
+                    &[
+                        ("create_time", OperationValue::Integer(now)),
+                        (
+                            "latest_addr",
+                            OperationValue::String(local_ip().unwrap().to_string()),
+                        ),
+                    ],
+                )
+                .await?;
                 debug!("update record successfully: {:?}", r);
             }
         };
@@ -41,30 +58,27 @@ impl RecordDao {
     }
 
     pub async fn create_record(record: Record) -> Result<String> {
-        let handler = &mut GraphQLHandler::global().lock().await;
+        let opt = OperationBuilder::new(&SchemaId::new(record::SCHEMA_ID).unwrap())
+            .action(OperationAction::Create)
+            .fields(&[
+                ("content", OperationValue::String(record.content)),
+                (
+                    "content_preview",
+                    OperationValue::String(record.content_preview.unwrap_or(String::new())),
+                ),
+                ("data_type", OperationValue::String(record.data_type)),
+                ("md5", OperationValue::String(record.md5)),
+                ("create_time", OperationValue::Integer(record.create_time)),
+                ("is_favorite", OperationValue::Integer(record.is_favorite)),
+                ("tags", OperationValue::String(record.tags)),
+                ("latest_addr", OperationValue::String(record.latest_addr)),
+                ("is_deleted", OperationValue::Integer(record.is_deleted)),
+            ])
+            .build()?;
 
-        let res = handler
-            .create_instance(
-                record::SCHEMA_ID,
-                &mut [
-                    field("content", &base64_encode(record.content.as_bytes())),
-                    field(
-                        "content_preview",
-                        &base64_encode(record.content_preview.unwrap_or(String::new()).as_bytes()),
-                    ),
-                    field("data_type", &record.data_type),
-                    field("md5", &record.md5),
-                    field("create_time", &record.create_time.to_string()),
-                    field("is_favorite", &record.is_favorite.to_string()),
-                    field("tags", &record.tags),
-                    field("latest_addr", &record.latest_addr),
-                    field("is_deleted", &record.is_deleted.to_string()),
-                ],
-            )
-            .await?;
-
+        let mut handler = GraphQLHandler::global().lock().await;
+        let res = handler.send_to_node(PlainOperation::from(&opt)).await?;
         info!("create record success, opt id: {}", res);
-
         Ok(res)
     }
 
@@ -87,6 +101,34 @@ impl RecordDao {
                 .all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f
                 .documents),
         }
+    }
+
+    pub async fn update_record_with_fields(
+        view_id: &DocumentViewId,
+        fields: &[(impl ToString, OperationValue)],
+    ) -> Result<String> {
+        let opt = OperationBuilder::new(&SchemaId::new(record::SCHEMA_ID).unwrap())
+            .action(OperationAction::Update)
+            .previous(view_id)
+            .fields(fields)
+            .build()?;
+
+        let handler = &mut GraphQLHandler::global().lock().await;
+        let res = handler.send_to_node(PlainOperation::from(&opt)).await?;
+        info!("update record success, opt id: {}", res);
+        Ok(res)
+    }
+
+    pub async fn delete_record(view_id: &DocumentViewId) -> Result<String> {
+        let opt = OperationBuilder::new(&SchemaId::new(record::SCHEMA_ID).unwrap())
+            .action(OperationAction::Delete)
+            .previous(view_id)
+            .build()?;
+
+        let handler = &mut GraphQLHandler::global().lock().await;
+        let res = handler.send_to_node(PlainOperation::from(&opt)).await?;
+        info!("delete record success, opt id: {}", res);
+        Ok(res)
     }
 
     // Delete record with over limit
@@ -119,7 +161,15 @@ impl RecordDao {
         .await?;
 
         // Delete records
+        let need_delete_records_len = need_delete_records.len();
         Self::batch_delete_record(need_delete_records).await?;
+
+        if let Err(e) = GlobalHandler::push_message_to_window(
+            MessageTypeEnum::DeleteClipboardRecordBackend,
+            format!("batch delete {} records success", need_delete_records_len),
+        ) {
+            error!("send DeleteClipboardRecordBackend message err: {:?}", e)
+        };
 
         Ok(true)
     }
@@ -177,36 +227,19 @@ impl RecordDao {
         }
     }
 
-    async fn update_record_create_time(record: &GraphRecordDocuments, now: i32) -> Result<String> {
-        let handler = &mut GraphQLHandler::global().lock().await;
-
-        let res = handler
-            .update_instance(
-                record::SCHEMA_ID,
-                &record.meta.as_ref().unwrap().view_id.to_string(),
-                &mut [
-                    field("create_time", &now.to_string()),
-                    field("latest_addr", &local_ip().unwrap().to_string()),
-                ],
-            )
-            .await?;
-
-        info!("update record create time success, opt id: {}", res);
-
-        Ok(res)
-    }
-
     async fn batch_delete_record(need_delete_records: Vec<GraphRecordPageDocuments>) -> Result<()> {
         let handler = &mut GraphQLHandler::global().lock().await;
 
         for record in need_delete_records {
-            match handler
-                .delete_instance(
-                    record::SCHEMA_ID,
-                    &record.meta.as_ref().unwrap().view_id.to_string(),
+            let opt = OperationBuilder::new(&SchemaId::new(record::SCHEMA_ID).unwrap())
+                .action(OperationAction::Delete)
+                .previous(
+                    &OperationId::from_str(record.meta.as_ref().unwrap().document_id.as_str())?
+                        .into(),
                 )
-                .await
-            {
+                .build()?;
+
+            match handler.send_to_node(PlainOperation::from(&opt)).await {
                 Ok(res) => {
                     info!("delete record success, opt id: {}", res);
                 }
