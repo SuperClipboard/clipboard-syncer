@@ -4,7 +4,6 @@ import {Button, Image, message} from "antd";
 import {base64ToImage, parseImageData} from "@/utils/image";
 import {CommandEnum} from "@/utils/consts";
 import {Record, RecordDataTypeEnum} from "@/models/Record";
-import {Base64} from "js-base64";
 import {RecordDocument} from "@/models/RecordDocument";
 import {invoke} from "@tauri-apps/api";
 
@@ -36,15 +35,8 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
     let clickCopy = (_: React.MouseEvent<HTMLDivElement>, record: Record) => {
         console.debug(record);
 
-        let content = record.content;
-        if (record.data_type === RecordDataTypeEnum.Image) {
-            content = btoa(content);
-        } else if (record.data_type === RecordDataTypeEnum.Text) {
-            content = Base64.encode(content);
-        }
-
         invoke(CommandEnum.TapChangeClipboardCommand, {
-            content: content,
+            content: record.content,
             dataType: record.data_type
         }).catch(e => {
             message.error(`change clipboard record failed: ${e}`);

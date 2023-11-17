@@ -70,7 +70,8 @@
         "height": 450,
         "decorations": false,
         "transparent": true,
-        "visible": false
+        "visible": false,
+        "alwaysOnTop": true
       }
     ],
     "systemTray": {

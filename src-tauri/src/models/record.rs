@@ -9,11 +9,11 @@ pub struct Record {
     // data_type(文本=text、图片=image)
     pub data_type: String,
     pub md5: String,
-    pub create_time: i32,
-    pub is_favorite: i32,
+    pub create_time: i64,
+    pub is_favorite: i64,
     pub tags: String,
     pub latest_addr: String,
-    pub is_deleted: i32,
+    pub is_deleted: i64,
 }
 
 pub enum DataTypeEnum {

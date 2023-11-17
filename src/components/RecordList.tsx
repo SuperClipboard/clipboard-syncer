@@ -4,7 +4,6 @@ import {allFavoriteRecords, getRecordByPage} from "@/utils/graphql";
 import InfiniteScroll from 'react-infinite-scroll-component';
 import RecordCard from "@/components/RecordCard";
 import {RecordDocument} from "@/models/RecordDocument";
-import {Base64} from "js-base64";
 import {listen, UnlistenFn} from "@tauri-apps/api/event";
 import {EventListenerEnum} from "@/utils/consts";
 
@@ -25,13 +24,8 @@ export default function RecordList() {
             if (!allFavoriteResp || !allFavoriteResp.documents || allFavoriteResp.documents.length <= 0) {
                 message.warning("No favorite records!")
             }
-            let favoriteDocuments = allFavoriteResp.documents;
-            for (let document of favoriteDocuments) {
-                document.fields.content = Base64.decode(document.fields.content);
-                document.fields.content_preview = Base64.decode(document.fields.content_preview);
-            }
-            console.debug(`all ${favoriteDocuments.length} favorite items loaded!`);
-            setFavoriteRecords(favoriteDocuments);
+            console.debug(`all ${allFavoriteResp.documents.length} favorite items loaded!`);
+            setFavoriteRecords(allFavoriteResp.documents);
         } catch (err) {
             message.error(`load more items failed: ${err}`);
         }
@@ -47,16 +41,10 @@ export default function RecordList() {
                 return;
             }
 
-            let documents = res.documents;
-            for (let document of documents) {
-                document.fields.content = Base64.decode(document.fields.content);
-                document.fields.content_preview = Base64.decode(document.fields.content_preview);
-            }
-
             setHasMore(res.hasNextPage);
-            setRecords(records.concat(documents));
+            setRecords(records.concat(res.documents));
             setEndCursor(res.endCursor);
-            message.success(`${documents.length} more items loaded!`);
+            message.success(`${res.documents.length} more items loaded!`);
         } catch (err) {
             message.error(`load more items failed: ${err}`);
         }
@@ -74,16 +62,10 @@ export default function RecordList() {
                 return;
             }
 
-            let documents = res.documents;
-            for (let document of documents) {
-                document.fields.content = Base64.decode(document.fields.content);
-                document.fields.content_preview = Base64.decode(document.fields.content_preview);
-            }
-
             setHasMore(res.hasNextPage);
-            setRecords(documents);
+            setRecords(res.documents);
             setEndCursor(res.endCursor);
-            console.log(`${documents.length} more items loaded!`);
+            console.log(`${res.documents.length} more items loaded!`);
         } catch (err) {
             message.error(`load more items failed: ${err}`);
         }

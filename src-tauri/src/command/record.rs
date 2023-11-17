@@ -1,13 +1,14 @@
 use local_ip_address::local_ip;
 use log::{debug, error, info, warn};
+use p2panda_rs::document::DocumentViewId;
+use p2panda_rs::operation::{OperationId, OperationValue};
+use std::str::FromStr;
 
 use crate::dao::record_dao::RecordDao;
 use crate::handler::global_handler::GlobalHandler;
 use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
-use crate::models::record;
 use crate::models::record::DataTypeEnum;
-use crate::p2panda::graphql::{field, GraphQLHandler};
 use crate::utils::clipboard::ClipBoardOperator;
 use crate::utils::json;
 use crate::utils::string::base64_decode;
@@ -15,7 +16,6 @@ use crate::utils::string::base64_decode;
 #[tauri::command]
 pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<(), String> {
     debug!("got content: {:?} with data_type {:?}", content, data_type);
-
     if data_type.eq(&String::from(DataTypeEnum::TEXT)) {
         let raw_content = base64_decode(&content);
         let content = match String::from_utf8(raw_content) {
@@ -68,8 +68,19 @@ pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<
 pub async fn delete_record(view_id: String) -> Result<(), String> {
     debug!("got view_id {:?}", view_id);
 
-    let handler = &mut GraphQLHandler::global().lock().await;
-    let delete_res = handler.delete_instance(record::SCHEMA_ID, &view_id).await;
+    let document_views = match OperationId::from_str(&view_id) {
+        Ok(res) => DocumentViewId::from(res),
+        Err(err) => {
+            let err_msg = format!("parse document view id error: {:?}", err);
+            error!(
+                "call OperationId::from_str in delete_record error: {:?}",
+                err
+            );
+            return Err(err_msg);
+        }
+    };
+
+    let delete_res = RecordDao::delete_record(&document_views).await;
     if delete_res.is_err() {
         error!("call delete instance error: {:?}", delete_res.unwrap_err())
     }
@@ -88,11 +99,23 @@ pub async fn delete_record(view_id: String) -> Result<(), String> {
 pub async fn toggle_favorite_record(view_id: String, old_favorite: i32) -> Result<(), String> {
     let favorite = if old_favorite.ne(&0) { 0 } else { 1 };
 
+    let document_views = match OperationId::from_str(&view_id) {
+        Ok(res) => DocumentViewId::from(res),
+        Err(err) => {
+            let err_msg = format!("parse document view id error: {:?}", err);
+            error!("call OperationId::from_str error: {:?}", err);
+            return Err(err_msg);
+        }
+    };
+
     match RecordDao::update_record_with_fields(
-        &view_id,
-        &mut [
-            field("is_favorite", &favorite.to_string()),
-            field("latest_addr", &local_ip().unwrap().to_string()),
+        &document_views,
+        &[
+            ("is_favorite", OperationValue::Integer(favorite)),
+            (
+                "latest_addr",
+                OperationValue::String(local_ip().unwrap().to_string()),
+            ),
         ],
     )
     .await
