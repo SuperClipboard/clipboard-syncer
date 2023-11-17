@@ -1,4 +1,3 @@
-use local_ip_address::local_ip;
 use log::{debug, error, info, warn};
 use p2panda_rs::document::DocumentViewId;
 use p2panda_rs::operation::{OperationId, OperationValue};
@@ -10,39 +9,19 @@ use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record::DataTypeEnum;
 use crate::utils::clipboard::ClipBoardOperator;
+use crate::utils::ip::local_ip;
 use crate::utils::json;
-use crate::utils::string::base64_decode;
 
 #[tauri::command]
 pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<(), String> {
     debug!("got content: {:?} with data_type {:?}", content, data_type);
     if data_type.eq(&String::from(DataTypeEnum::TEXT)) {
-        let raw_content = base64_decode(&content);
-        let content = match String::from_utf8(raw_content) {
-            Ok(content) => content,
-            Err(err) => {
-                error!(
-                    "Decode base64 data failed, content: {:?}, err: {}",
-                    content, err
-                );
-                return Err(err.to_string());
-            }
-        };
-
         if let Err(e) = ClipBoardOperator::set_text(content) {
             let err_msg = format!("Set text to clipboard err: {}", e);
             error!("{}", err_msg);
             return Err(err_msg);
         };
     } else if data_type.eq(&String::from(DataTypeEnum::IMAGE)) {
-        let raw_image = base64_decode(&content);
-        let content = match String::from_utf8(raw_image) {
-            Ok(content) => content,
-            Err(err) => {
-                error!("Decode base64 data failed, err: {}", err);
-                return Err(err.to_string());
-            }
-        };
         let image_data = match json::parse::<ImageData>(&content) {
             Ok(image_data) => image_data,
             Err(err) => {
@@ -114,7 +93,7 @@ pub async fn toggle_favorite_record(view_id: String, old_favorite: i32) -> Resul
             ("is_favorite", OperationValue::Integer(favorite)),
             (
                 "latest_addr",
-                OperationValue::String(local_ip().unwrap().to_string()),
+                OperationValue::String(local_ip().to_string()),
             ),
         ],
     )

@@ -26,8 +26,12 @@ fn main() {
             app::command::record::toggle_favorite_record,
         ])
         .setup(|app| {
-            let window = app.get_window(MAIN_WINDOW).unwrap();
-            set_shadow(&window, true).expect("Unsupported platform!");
+            if cfg!(not(target_os="linux")) {
+                let window = app.get_window(MAIN_WINDOW).unwrap();
+                if let Err(_) = set_shadow(&window, true) {
+                    error!("Set window shadow failed, unsupported platform!")
+                }
+            }
             setup_service(app);
             Ok(())
         });

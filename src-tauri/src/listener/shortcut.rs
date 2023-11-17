@@ -10,7 +10,7 @@ pub enum ShortcutKeymapEnum {
 impl From<ShortcutKeymapEnum> for &'static str {
     fn from(value: ShortcutKeymapEnum) -> Self {
         match value {
-            ShortcutKeymapEnum::ToggleWindow => "Cmd+k",
+            ShortcutKeymapEnum::ToggleWindow => "CommandOrControl+k",
         }
     }
 }

@@ -35,6 +35,7 @@ impl NodeServer {
             http_port: graphql_port,
             network: NetworkConfiguration {
                 quic_port: sync_port,
+                mdns: true,
                 ..Default::default()
             },
             ..Default::default()

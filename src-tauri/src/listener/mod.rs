@@ -17,7 +17,9 @@ pub fn register_all_listeners(app: &mut App) -> Result<()> {
     ClipboardListener::listen();
 
     // Start shortcut listener
-    ShortcutListener::register_all_hotkey_listeners(app)?;
+    if cfg!(not(target_os="linux")) {
+        ShortcutListener::register_all_hotkey_listeners(app)?;
+    }
 
     Ok(())
 }

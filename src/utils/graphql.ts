@@ -182,6 +182,7 @@ async function firstFilterGetRecordByPage(keyword: string, limit: number = 20): 
         query RecordByPages(
             $limit: Int = 20,
             $keyword: String,
+            $data_type_filter: [String!] = ["text"],
             $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy = create_time,
             $order_dir: OrderDirection = DESC,
         ) {
@@ -191,7 +192,8 @@ async function firstFilterGetRecordByPage(keyword: string, limit: number = 20): 
                 first: $limit,
                 filter: {
                     is_favorite: {in: [0]},
-                    content: {contains: $keyword}
+                    content: {contains: $keyword},
+                    data_type: {in: $data_type_filter}
                 }
             ) {
                 documents {
@@ -239,6 +241,7 @@ export async function otherFilterGetRecordByPage(keyword: string, startCursor: s
             $limit: Int = 20,
             $start_cursor: Cursor,
             $keyword: String,
+            $data_type_filter: [String!] = ["text"],
             $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy = create_time,
             $order_dir: OrderDirection = DESC,
         ) {
@@ -249,7 +252,8 @@ export async function otherFilterGetRecordByPage(keyword: string, startCursor: s
                 after: $start_cursor,
                 filter: {
                     is_favorite: {in: [0]}
-                    content: {contains: $keyword}
+                    content: {contains: $keyword},
+                    data_type: {in: $data_type_filter}
                 }
             ) {
                 documents {
