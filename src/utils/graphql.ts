@@ -50,11 +50,19 @@ export async function allFavoriteRecords(): Promise<PageRecordResponse> {
     }
 }
 
-export async function getRecordByPage(limit: number = 20, startCursor?: string, favoriteFilter?: Array<number>): Promise<PageRecordResponse> {
-    if (!startCursor || startCursor.length <= 0) {
-        return firstGetRecordByPage();
+export async function getRecordByPage(limit: number = 20, startCursor?: string, favoriteFilter?: Array<number>, searchKeyword?: string): Promise<PageRecordResponse> {
+    if (!searchKeyword || searchKeyword === "") {
+        if (!startCursor || startCursor.length <= 0) {
+            return firstGetRecordByPage();
+        } else {
+            return otherGetRecordByPage(limit, startCursor);
+        }
     } else {
-        return otherGetRecordByPage(limit, startCursor, favoriteFilter);
+        if (!startCursor || startCursor.length <= 0) {
+            return firstFilterGetRecordByPage(searchKeyword);
+        } else {
+            return otherFilterGetRecordByPage(searchKeyword, startCursor, limit);
+        }
     }
 }
 
@@ -113,12 +121,11 @@ async function firstGetRecordByPage(limit: number = 20, favoriteFilter?: Array<n
     }
 }
 
-export async function otherGetRecordByPage(limit: number = 20, startCursor: string, favoriteFilter?: Array<number>): Promise<PageRecordResponse> {
+export async function otherGetRecordByPage(limit: number = 20, startCursor: string): Promise<PageRecordResponse> {
     const query = gql`
         query RecordByPages(
             $limit: Int = 20,
             $start_cursor: Cursor,
-            $favorite_filter: [Int!] = [0],
             $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy = create_time,
             $order_dir: OrderDirection = DESC,
         ) {
@@ -128,7 +135,7 @@ export async function otherGetRecordByPage(limit: number = 20, startCursor: stri
                 first: $limit,
                 after: $start_cursor,
                 filter: {
-                    is_favorite: {in: $favorite_filter}
+                    is_favorite: {in: [0]}
                 }
             ) {
                 documents {
@@ -159,7 +166,121 @@ export async function otherGetRecordByPage(limit: number = 20, startCursor: stri
         let resp = await client.request<PageRecordResponseWrapper>(query, {
             limit: limit,
             start_cursor: startCursor,
-            favorite_filter: favoriteFilter,
+        });
+        console.log(resp);
+        return resp.resp;
+    } catch (error) {
+        console.error(
+            `Error: make graphql request failed to ${GraphqlEndpoint}, error: ${error}`,
+        );
+        return Promise.reject(error);
+    }
+}
+
+async function firstFilterGetRecordByPage(keyword: string, limit: number = 20): Promise<PageRecordResponse> {
+    const query = gql`
+        query RecordByPages(
+            $limit: Int = 20,
+            $keyword: String,
+            $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy = create_time,
+            $order_dir: OrderDirection = DESC,
+        ) {
+            resp: all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f(
+                orderBy: $order_by,
+                orderDirection: $order_dir,
+                first: $limit,
+                filter: {
+                    is_favorite: {in: [0]},
+                    content: {contains: $keyword}
+                }
+            ) {
+                documents {
+                    fields {
+                        content
+                        content_preview
+                        data_type
+                        md5
+                        create_time
+                        is_favorite
+                        tags
+                        latest_addr
+                        is_deleted
+                    }
+                    meta {
+                        documentId
+                        viewId
+                        owner
+                    }
+                }
+                hasNextPage
+                endCursor
+                totalCount
+            }
+        }`;
+
+    try {
+        let resp = await client.request<PageRecordResponseWrapper>(query, {
+            limit: limit,
+            keyword: keyword,
+        });
+        console.debug(resp);
+        return resp.resp;
+    } catch (error) {
+        console.error(
+            `Error: make graphql request failed to ${GraphqlEndpoint}, error: ${error}`,
+        );
+        return Promise.reject(error);
+    }
+}
+
+export async function otherFilterGetRecordByPage(keyword: string, startCursor: string, limit: number = 20): Promise<PageRecordResponse> {
+    const query = gql`
+        query RecordByPages(
+            $limit: Int = 20,
+            $start_cursor: Cursor,
+            $keyword: String,
+            $order_by: record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099fOrderBy = create_time,
+            $order_dir: OrderDirection = DESC,
+        ) {
+            resp: all_record_002017915c937c1c44d1d6a7bc6697b2760396843676cc418a02b481fb08009e099f(
+                orderBy: $order_by,
+                orderDirection: $order_dir,
+                first: $limit,
+                after: $start_cursor,
+                filter: {
+                    is_favorite: {in: [0]}
+                    content: {contains: $keyword}
+                }
+            ) {
+                documents {
+                    fields {
+                        content
+                        content_preview
+                        data_type
+                        md5
+                        create_time
+                        is_favorite
+                        tags
+                        latest_addr
+                        is_deleted
+                    }
+                    meta {
+                        documentId
+                        viewId
+                        owner
+                    }
+                }
+                hasNextPage
+                endCursor
+                totalCount
+            }
+        }`;
+
+    try {
+        let resp = await client.request<PageRecordResponseWrapper>(query, {
+            limit: limit,
+            start_cursor: startCursor,
+            keyword: keyword,
         });
         console.log(resp);
         return resp.resp;

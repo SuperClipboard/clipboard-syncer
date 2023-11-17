@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {message} from 'antd';
 import {allFavoriteRecords, getRecordByPage} from "@/utils/graphql";
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -9,12 +9,64 @@ import {EventListenerEnum} from "@/utils/consts";
 
 const PageSize = 10;
 
-export default function RecordList() {
+interface RecordListProps {
+    searchKeyword: string;
+}
 
-    const [favoriteRecords, setFavoriteRecords] = useState<RecordDocument[]>([])
+export default function RecordList(props: RecordListProps) {
+
+    const prevSearchKeywordRef = useRef<string>(props.searchKeyword);
+
+    const [favoriteRecords, setFavoriteRecords] = useState<RecordDocument[]>([]);
     const [hasMore, setHasMore] = useState(false);
     const [records, setRecords] = useState<RecordDocument[]>([]);
     const [endCursor, setEndCursor] = useState<string>("");
+
+    useEffect(() => {
+        const unlistenFns: UnlistenFn[] = [];
+
+        clipboardChangeListener()
+            .then((ulf) => {
+                unlistenFns.push(ulf);
+            })
+            .catch((err) => {
+                message.error(`handle event: ${EventListenerEnum.ChangeClipboardBackend} err: ${err.message}`);
+            });
+
+        updateClipboardRecordListener()
+            .then((ulf) => {
+                unlistenFns.push(ulf);
+            })
+            .catch((err) => {
+                message.error(`handle event: ${EventListenerEnum.UpdateClipboardRecordBackend} err: ${err.message}`);
+            });
+
+        deleteClipboardRecordListener()
+            .then((ulf) => {
+                unlistenFns.push(ulf);
+            })
+            .catch((err) => {
+                message.error(`handle event: ${EventListenerEnum.DeleteClipboardRecordBackend} err: ${err.message}`);
+            });
+
+        reloadFavoriteRecords().then(() => {
+            reloadRecords().then();
+        });
+
+        return () => {
+            for (const ulf of unlistenFns) ulf();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (prevSearchKeywordRef.current !== props.searchKeyword) {
+            // when searchKeyword has changed
+            console.log(`searchKeyword changed from ${prevSearchKeywordRef.current} to ${props.searchKeyword}`)
+            reloadRecords().then();
+        }
+
+        prevSearchKeywordRef.current = props.searchKeyword;
+    }, [props.searchKeyword]);
 
     const reloadFavoriteRecords = async () => {
         setFavoriteRecords([]);
@@ -33,7 +85,7 @@ export default function RecordList() {
 
     const fetchRecords = async () => {
         try {
-            let res = await getRecordByPage(PageSize, endCursor, [0]);
+            let res = await getRecordByPage(PageSize, endCursor, [0], props.searchKeyword);
             console.log(`res: ${res}`);
 
             if (!res || !res.documents || res.documents.length <= 0) {
@@ -56,7 +108,7 @@ export default function RecordList() {
         setEndCursor("");
 
         try {
-            let res = await getRecordByPage(PageSize, "", [0]);
+            let res = await getRecordByPage(PageSize, "", [0], props.searchKeyword);
             if (!res || !res.documents || res.documents.length <= 0) {
                 message.warning("No records found!")
                 return;
@@ -96,44 +148,9 @@ export default function RecordList() {
         });
     }
 
-    useEffect(() => {
-        const unlistenFns: UnlistenFn[] = [];
-
-        clipboardChangeListener()
-            .then((ulf) => {
-                unlistenFns.push(ulf);
-            })
-            .catch((err) => {
-                message.error(`handle event: ${EventListenerEnum.ChangeClipboardBackend} err: ${err.message}`);
-            });
-
-        updateClipboardRecordListener()
-            .then((ulf) => {
-                unlistenFns.push(ulf);
-            })
-            .catch((err) => {
-                message.error(`handle event: ${EventListenerEnum.UpdateClipboardRecordBackend} err: ${err.message}`);
-            });
-
-        deleteClipboardRecordListener()
-            .then((ulf) => {
-                unlistenFns.push(ulf);
-            })
-            .catch((err) => {
-                message.error(`handle event: ${EventListenerEnum.DeleteClipboardRecordBackend} err: ${err.message}`);
-            });
-
-        reloadFavoriteRecords().then(() => {
-            reloadRecords().then();
-        });
-
-        return () => {
-            for (const ulf of unlistenFns) ulf();
-        };
-    }, []);
-
     return (
         <div id={"record-list-container"}>
+            current keyword: {prevSearchKeywordRef.current}<br/>
             favorite: {favoriteRecords.length}, normal: {records.length}
             <div className={"favorite-record-list"}>
                 <InfiniteScroll
