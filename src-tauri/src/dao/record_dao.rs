@@ -9,6 +9,8 @@ use crate::graphql::{
     record_by_md5_query, record_by_pages, record_counts, GraphRecordDocuments, GraphRecordOrderBy,
     GraphRecordPageDocuments, RecordByMd5Query, RecordByPages, RecordCounts,
 };
+use crate::handler::global_handler::GlobalHandler;
+use crate::handler::model::MessageTypeEnum;
 use crate::models::record;
 use crate::models::record::Record;
 use crate::p2panda::graphql::{field, GraphQLHandler, StringTuple};
@@ -138,7 +140,15 @@ impl RecordDao {
         .await?;
 
         // Delete records
+        let need_delete_records_len = need_delete_records.len();
         Self::batch_delete_record(need_delete_records).await?;
+
+        if let Err(e) = GlobalHandler::push_message_to_window(
+            MessageTypeEnum::DeleteClipboardRecordBackend,
+            format!("batch delete {} records success", need_delete_records_len),
+        ) {
+            error!("send DeleteClipboardRecordBackend message err: {:?}", e)
+        };
 
         Ok(true)
     }
@@ -203,7 +213,7 @@ impl RecordDao {
             match handler
                 .delete_instance(
                     record::SCHEMA_ID,
-                    &record.meta.as_ref().unwrap().view_id.to_string(),
+                    &record.meta.as_ref().unwrap().document_id.to_string(),
                 )
                 .await
             {

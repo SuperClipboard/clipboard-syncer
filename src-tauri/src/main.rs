@@ -9,11 +9,9 @@ use tauri::{App, Manager};
 use window_shadows::set_shadow;
 
 use app::consts::MAIN_WINDOW;
-use app::listener::clipboard::ClipboardListener;
-use app::listener::global_event_listener::GlobalEventListener;
 use app::p2panda::node::NodeServer;
 use app::tray::register_tray;
-use app::{handler, logger};
+use app::{handler, listener, logger};
 
 fn main() {
     dotenv().ok();
@@ -78,9 +76,5 @@ fn setup_service(app: &mut App) {
         error!("Start node server failed!")
     }
 
-    // Start global application listener
-    GlobalEventListener::register_all_global_listeners(app).unwrap();
-
-    // Start listening for clipboard
-    ClipboardListener::listen();
+    listener::register_all_listeners(app).unwrap();
 }

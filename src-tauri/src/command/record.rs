@@ -3,6 +3,7 @@ use log::{debug, error, info, warn};
 
 use crate::dao::record_dao::RecordDao;
 use crate::handler::global_handler::GlobalHandler;
+use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::DataTypeEnum;
@@ -73,11 +74,11 @@ pub async fn delete_record(view_id: String) -> Result<(), String> {
         error!("call delete instance error: {:?}", delete_res.unwrap_err())
     }
 
-    if let Err(e) = GlobalHandler::change_clipboard_backend_handler(format!(
-        "delete view_id: {} success",
-        view_id
-    )) {
-        error!("send change_clipboard_backend message err: {:?}", e)
+    if let Err(e) = GlobalHandler::push_message_to_window(
+        MessageTypeEnum::DeleteClipboardRecordBackend,
+        format!("delete view_id: {} success", view_id),
+    ) {
+        error!("send DeleteClipboardRecordBackend message err: {:?}", e)
     };
 
     Ok(())
@@ -100,13 +101,21 @@ pub async fn toggle_favorite_record(view_id: String, old_favorite: i32) -> Resul
             info!(
                 "call update_record_with_fields successfully: opt_id={}",
                 opt_id
-            );
-            Ok(())
+            )
         }
         Err(err) => {
             let err_msg = format!("call delete instance error: {:?}", err);
             error!("call update_record_with_fields error: {:?}", err);
-            Err(err_msg)
+            return Err(err_msg);
         }
-    }
+    };
+
+    if let Err(e) = GlobalHandler::push_message_to_window(
+        MessageTypeEnum::UpdateClipboardRecordBackend,
+        format!("update favorite record success, view_id: {}", view_id),
+    ) {
+        error!("send UpdateClipboardRecordBackend message err: {:?}", e)
+    };
+
+    Ok(())
 }

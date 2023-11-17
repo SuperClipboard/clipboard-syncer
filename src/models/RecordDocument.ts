@@ -15,6 +15,10 @@ export type PageRecordResponseWrapper = {
     resp: PageRecordResponse,
 };
 
+export type AllFavoriteRecordsWrapper = {
+    favorite_resp: PageRecordResponse,
+}
+
 export type PageRecordResponse = {
     documents: RecordDocument[],
     hasNextPage: boolean,

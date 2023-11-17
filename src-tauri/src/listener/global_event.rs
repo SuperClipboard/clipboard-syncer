@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tauri::App;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct GlobalEventListener;
 
 impl GlobalEventListener {

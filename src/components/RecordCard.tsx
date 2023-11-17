@@ -71,10 +71,11 @@ function RecordCardRight(props: RecordCardPropsRight) {
     const [isFavorite, setIsFavorite] = useState(props.data.fields.is_favorite);
 
     let deleteRecord = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
-        console.debug(`delete record emit view id: ${doc.meta.viewId}`);
+        // Use documentId to delete the entire document!
+        console.debug(`delete record emit view id: ${doc.meta.documentId}`);
 
         invoke(CommandEnum.DeleteRecordCommand, {
-            viewId: doc.meta.viewId
+            viewId: doc.meta.documentId
         }).catch(e => {
             message.error(`delete record failed: ${e}`);
         });

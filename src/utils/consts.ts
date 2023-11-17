@@ -9,6 +9,8 @@ export enum CommandEnum {
 
 export enum EventListenerEnum {
     ChangeClipboardBackend = "cbs://change-clipboard-backend",
+    UpdateClipboardRecordBackend = "cbs://update-clipboard-record-backend",
+    DeleteClipboardRecordBackend = "cbs://delete-clipboard-record-backend",
 }
 
 export const DefaultGraphqlEndpoint = "http://localhost:12020/graphql";

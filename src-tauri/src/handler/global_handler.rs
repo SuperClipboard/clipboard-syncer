@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use anyhow::{bail, Result};
-use log::{error, info};
+use log::error;
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use serde::Serialize;
@@ -36,22 +36,9 @@ impl GlobalHandler {
         msg_type: MessageTypeEnum,
         msg: M,
     ) -> Result<()> {
-        match msg_type {
-            MessageTypeEnum::ChangeClipboardBackend => {
-                info!("send ChangeClipBoard message: {:?}", msg);
-                Self::change_clipboard_backend_handler(msg)
-            }
-        }
-    }
-
-    pub fn change_clipboard_backend_handler<M: Serialize + Clone + Debug>(msg: M) -> Result<()> {
         let app_handle = Self::global().app_handle.lock();
         if app_handle.is_none() {
-            error!(
-                "Cannot push message to window: {:?}, {:?}",
-                MessageTypeEnum::ChangeClipboardBackend,
-                msg
-            );
+            error!("Cannot push message to window: {:?}, {:?}", msg_type, msg);
             bail!("application not initiated, push_message_to_window error");
         }
 
@@ -60,10 +47,7 @@ impl GlobalHandler {
             .unwrap()
             .get_window(MAIN_WINDOW)
             .unwrap();
-        window.emit_all(
-            &String::from(MessageTypeEnum::ChangeClipboardBackend),
-            Payload { message: msg },
-        )?;
+        window.emit_all(msg_type.into(), Payload { message: msg })?;
 
         Ok(())
     }
