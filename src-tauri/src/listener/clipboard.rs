@@ -1,6 +1,5 @@
 use arboard::Clipboard;
 use chrono::Duration;
-use local_ip_address::local_ip;
 use log::{debug, error, info};
 
 use crate::config::app_config::AppConfig;
@@ -10,6 +9,7 @@ use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record;
 use crate::models::record::Record;
+use crate::utils::ip::local_ip;
 use crate::utils::{image, json, string};
 
 pub struct ClipboardListener;
@@ -75,7 +75,7 @@ impl ClipboardListener {
                 content,
                 content_preview,
                 data_type: record::DataTypeEnum::TEXT.into(),
-                latest_addr: local_ip().unwrap().to_string(),
+                latest_addr: local_ip().to_string(),
                 ..Default::default()
             };
             debug!("handle_text_message data: {:?}", data);
@@ -120,7 +120,7 @@ impl ClipboardListener {
                 content,
                 content_preview: Some(content_preview),
                 data_type: record::DataTypeEnum::IMAGE.into(),
-                latest_addr: local_ip().unwrap().to_string(),
+                latest_addr: local_ip().to_string(),
                 ..Default::default()
             };
             let res = RecordDao::insert_if_not_exist(data).await;

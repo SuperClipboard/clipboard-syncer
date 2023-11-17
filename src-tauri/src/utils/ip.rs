@@ -1,5 +1,8 @@
+use crate::consts::LOCALHOST;
 use lazy_static::lazy_static;
+use log::warn;
 use regex::Regex;
+use std::net::IpAddr;
 
 lazy_static! {
     static ref ADDR_REGEX: Regex =
@@ -8,6 +11,16 @@ lazy_static! {
 
 pub fn check_addr(addr: &str) -> bool {
     ADDR_REGEX.is_match(addr)
+}
+
+pub fn local_ip() -> IpAddr {
+    match local_ip_address::local_ip() {
+        Ok(ip) => ip,
+        Err(err) => {
+            warn!("Get local ip address failed: {}", err);
+            LOCALHOST.parse().unwrap()
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,4 +1,3 @@
-use local_ip_address::local_ip;
 use log::{debug, error, info, warn};
 use p2panda_rs::document::DocumentViewId;
 use p2panda_rs::operation::{OperationId, OperationValue};
@@ -10,6 +9,7 @@ use crate::handler::model::MessageTypeEnum;
 use crate::models::image_data::ImageData;
 use crate::models::record::DataTypeEnum;
 use crate::utils::clipboard::ClipBoardOperator;
+use crate::utils::ip::local_ip;
 use crate::utils::json;
 use crate::utils::string::base64_decode;
 
@@ -114,7 +114,7 @@ pub async fn toggle_favorite_record(view_id: String, old_favorite: i32) -> Resul
             ("is_favorite", OperationValue::Integer(favorite)),
             (
                 "latest_addr",
-                OperationValue::String(local_ip().unwrap().to_string()),
+                OperationValue::String(local_ip().to_string()),
             ),
         ],
     )

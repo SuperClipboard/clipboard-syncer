@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use anyhow::Result;
 use graphql_client::{GraphQLQuery, Response};
-use local_ip_address::local_ip;
 use log::{debug, error, info};
 use p2panda_rs::document::DocumentViewId;
 use p2panda_rs::operation::plain::PlainOperation;
@@ -20,6 +19,7 @@ use crate::handler::model::MessageTypeEnum;
 use crate::models::record;
 use crate::models::record::Record;
 use crate::p2panda::graphql::GraphQLHandler;
+use crate::utils::ip::local_ip;
 use crate::utils::string;
 
 pub struct RecordDao;
@@ -46,7 +46,7 @@ impl RecordDao {
                         ("create_time", OperationValue::Integer(now)),
                         (
                             "latest_addr",
-                            OperationValue::String(local_ip().unwrap().to_string()),
+                            OperationValue::String(local_ip().to_string()),
                         ),
                     ],
                 )
