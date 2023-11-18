@@ -4,14 +4,15 @@
 use aquadoggo::Node;
 use dotenv::dotenv;
 use log::{error, info};
-use tauri::async_runtime::block_on;
 use tauri::{App, Manager};
+use tauri::async_runtime::block_on;
+use tauri_plugin_log::LogTarget;
 use window_shadows::set_shadow;
-
+use tauri::api::notification::Notification;
+use app::{handler, listener, logger};
 use app::consts::MAIN_WINDOW;
 use app::p2panda::node::NodeServer;
 use app::tray::register_tray;
-use app::{handler, listener, logger};
 
 fn main() {
     dotenv().ok();
@@ -25,6 +26,23 @@ fn main() {
             app::command::record::delete_record,
             app::command::record::toggle_favorite_record,
         ])
+        .plugin(tauri_plugin_single_instance::init(|app, _, cwd| {
+            Notification::new(&app.config().tauri.bundle.identifier)
+                .title("The program is already running. Please do not start it again!")
+                .body(cwd)
+                .icon("pot")
+                .show()
+                .unwrap();
+        }))
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([LogTarget::LogDir, LogTarget::Stdout])
+                .build(),
+        )
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![]),
+        ))
         .setup(|app| {
             if cfg!(not(target_os="linux")) {
                 let window = app.get_window(MAIN_WINDOW).unwrap();
@@ -62,7 +80,12 @@ fn main() {
 fn setup_service(app: &mut App) {
     // Make the docker NOT to have an active app when started
     #[cfg(target_os = "macos")]
-    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    {
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+        let trusted =
+            macos_accessibility_client::accessibility::application_is_trusted_with_prompt();
+        info!("MacOS Accessibility Trusted: {}", trusted);
+    }
 
     // Save application handler
     handler::global_handler::GlobalHandler::global().init(app.app_handle());
