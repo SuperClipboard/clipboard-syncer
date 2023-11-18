@@ -6,6 +6,7 @@ import {CommandEnum} from "@/utils/consts";
 import {Record, RecordDataTypeEnum} from "@/models/Record";
 import {RecordDocument} from "@/models/RecordDocument";
 import {invoke} from "@tauri-apps/api";
+import {Tooltip} from 'react-tooltip';
 
 interface RecordCardProps {
     data: RecordDocument,
@@ -51,7 +52,14 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
                         src={URL.createObjectURL(base64ToImage((parseImageData(props.data.fields.content_preview).base64)))}
                         preview={false}/>
                 ) : (
-                    <p>{props.data.fields.content_preview}</p>
+                    <div className={"record-card-text-container"}>
+                        <p
+                            data-tooltip-id="record-card-text"
+                            data-tooltip-content={props.data.fields.content}
+                            data-tooltip-place={"bottom"}
+                        >{props.data.fields.content_preview}</p>
+                        <Tooltip id={"record-card-text"} className={"record-card-text-tooltip"}/>
+                    </div>
                 )
             }
         </div>

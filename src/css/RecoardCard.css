@@ -31,13 +31,8 @@
     border-color: #fff !important;
 }
 
-.search-results {
-    margin-top: 10px;
-}
-
-.result-item {
-    padding: 10px;
-    background-color: rgba(200, 200, 200, 0.5);
-    border-radius: 5px;
-    margin-bottom: 10px;
+.record-card-text-container .record-card-text-tooltip {
+    white-space: pre-line;
+    background-color: #ffaa73;
+    color: #222;
 }

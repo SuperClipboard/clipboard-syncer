@@ -1,22 +1,20 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use aquadoggo::Node;
-use dotenv::dotenv;
-use log::{error, info};
-use tauri::{App, Manager};
-use tauri::async_runtime::block_on;
-use tauri_plugin_log::LogTarget;
-use window_shadows::set_shadow;
-use tauri::api::notification::Notification;
-use app::{handler, listener, logger};
 use app::consts::MAIN_WINDOW;
 use app::p2panda::node::NodeServer;
 use app::tray::register_tray;
+use app::{handler, listener, logger};
+use aquadoggo::Node;
+use dotenv::dotenv;
+use log::{error, info};
+use tauri::api::notification::Notification;
+use tauri::async_runtime::block_on;
+use tauri::{App, Manager};
+use window_shadows::set_shadow;
 
 fn main() {
     dotenv().ok();
-    logger::init();
 
     // Step 0: Create and setup application
     let app = tauri::Builder::default()
@@ -34,20 +32,19 @@ fn main() {
                 .show()
                 .unwrap();
         }))
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([LogTarget::LogDir, LogTarget::Stdout])
-                .build(),
-        )
+        .plugin(logger::build_logger())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
         .setup(|app| {
-            if cfg!(not(target_os="linux")) {
+            if cfg!(not(target_os = "linux")) {
                 let window = app.get_window(MAIN_WINDOW).unwrap();
-                if let Err(_) = set_shadow(&window, true) {
-                    error!("Set window shadow failed, unsupported platform!")
+                if let Err(err) = set_shadow(&window, true) {
+                    error!(
+                        "Set window shadow failed, unsupported platform, error: {}",
+                        err
+                    );
                 }
             }
             setup_service(app);
@@ -82,9 +79,6 @@ fn setup_service(app: &mut App) {
     #[cfg(target_os = "macos")]
     {
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-        let trusted =
-            macos_accessibility_client::accessibility::application_is_trusted_with_prompt();
-        info!("MacOS Accessibility Trusted: {}", trusted);
     }
 
     // Save application handler
