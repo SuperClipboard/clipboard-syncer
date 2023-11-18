@@ -5,8 +5,13 @@
     justify-content: space-between;
     align-content: space-between;
     margin: 5px 0 5px 0;
-    border-top: 1px solid rgb(128, 128, 128);
-    border-bottom: 1px solid rgb(128, 128, 128);
+    border-bottom: 1px solid rgb(211, 211, 211);
+    border-radius: 3px;
+}
+
+.RecordCard:hover {
+    background-color: #f5f8fa;
+    transition: background-color 0.3s ease;
 }
 
 .record-card-left {
@@ -28,7 +33,6 @@
 .record-favorite-button {
     text-align: center;
     color: #ffaa00 !important;
-    border-color: #fff !important;
 }
 
 .record-card-text-container .record-card-text-tooltip {
