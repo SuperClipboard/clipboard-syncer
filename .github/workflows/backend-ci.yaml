@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.settings.platform }}
     defaults:
       run:
-        working-directory: ./clipboard-syncer/src-tauri/
+        working-directory: src-tauri
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
