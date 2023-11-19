@@ -8,7 +8,6 @@ use p2panda_rs::operation::plain::PlainOperation;
 use p2panda_rs::operation::{OperationAction, OperationBuilder, OperationId, OperationValue};
 use p2panda_rs::schema::SchemaId;
 
-use crate::config::app_config::AppConfig;
 use crate::graphql::record_by_pages::OrderDirection;
 use crate::graphql::{
     record_by_md5_query, record_by_pages, record_counts, GraphRecordDocuments, GraphRecordOrderBy,
@@ -136,11 +135,9 @@ impl RecordDao {
         // 先查询count，如果count - limit > RECORD_LIMIT_THRESHOLD 才删除超出limit部分记录，防止频繁操作
         let cnt = Self::count_records().await? as usize;
 
+        let record_limit_threshold = Self::calculate_record_limit_threshold(limit);
+
         // Not reach the threshold
-        let record_limit_threshold;
-        {
-            record_limit_threshold = AppConfig::latest().read().record_limit_threshold.unwrap();
-        }
         if cnt < record_limit_threshold + limit {
             return Ok(false);
         }
@@ -172,6 +169,20 @@ impl RecordDao {
         };
 
         Ok(true)
+    }
+
+    /// 先查询count，如果count - limit > RECORD_LIMIT_THRESHOLD 才删除超出limit部分记录，防止频繁操作
+    #[inline]
+    fn calculate_record_limit_threshold(limit: usize) -> usize {
+        if limit < 100 {
+            0
+        } else if limit < 500 {
+            10
+        } else if limit < 1000 {
+            20
+        } else {
+            30
+        }
     }
 
     async fn count_records() -> Result<i64> {

@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
@@ -10,23 +9,26 @@ use serde::{Deserialize, Serialize};
 use crate::utils::dir::config_path;
 use crate::utils::json;
 
+pub const DEFAULT_STORE_LIMIT: u32 = 100;
+pub const DEFAULT_SYNC_PORT: u16 = 12022;
+pub const DEFAULT_GRAPHQL_PORT: u16 = 12020;
+pub const DEFAULT_TOGGLE_WINDOW_HOTKEY: &str = "CommandOrControl+Shift+k";
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Configure {
     pub store_limit: Option<u32>,
-    pub sync_port: Option<String>,
-    pub graphql_port: Option<String>,
-    pub record_limit_threshold: Option<usize>,
-    pub sync_server_addr_list: Option<HashSet<String>>,
+    pub sync_port: Option<u16>,
+    pub graphql_port: Option<u16>,
+    pub toggle_window_hotkey: Option<String>,
 }
 
 impl Default for Configure {
     fn default() -> Self {
         Self {
-            store_limit: Some(100),
-            sync_port: Some("12022".to_string()),
-            graphql_port: Some("12020".to_string()),
-            record_limit_threshold: Some(50),
-            sync_server_addr_list: Some(HashSet::new()),
+            store_limit: Some(DEFAULT_STORE_LIMIT),
+            sync_port: Some(DEFAULT_SYNC_PORT),
+            graphql_port: Some(DEFAULT_GRAPHQL_PORT),
+            toggle_window_hotkey: Some(DEFAULT_TOGGLE_WINDOW_HOTKEY.to_string()),
         }
     }
 }
@@ -82,16 +84,16 @@ impl Configure {
         merge!(store_limit);
         merge!(sync_port);
         merge!(graphql_port);
-        merge!(record_limit_threshold);
-        merge!(sync_server_addr_list);
+        merge!(toggle_window_hotkey);
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use crate::config::configure::Configure;
     use crate::utils::dir::config_path;
-    use std::path::Path;
 
     #[test]
     fn test_new_config() {

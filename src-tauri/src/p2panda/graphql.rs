@@ -134,7 +134,7 @@ impl GraphQLHandler {
     fn new() -> Self {
         let graphql_port;
         {
-            graphql_port = AppConfig::latest().read().graphql_port.clone().unwrap();
+            graphql_port = AppConfig::latest().read().graphql_port.unwrap();
         }
         let endpoint = format!("http://localhost:{}/graphql", graphql_port);
         let cli = Client::new();

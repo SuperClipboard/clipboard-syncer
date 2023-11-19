@@ -20,6 +20,8 @@ fn main() {
     let app = tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             app::command::config::graphql_endpoint,
+            app::command::config::load_app_config,
+            app::command::config::save_app_config,
             app::command::record::tap_change_clipboard,
             app::command::record::delete_record,
             app::command::record::toggle_favorite_record,

@@ -2,6 +2,8 @@ import {invoke} from "@tauri-apps/api";
 
 export enum CommandEnum {
     GraphqlEndpointCommand = "graphql_endpoint",
+    LoadAppConfigCommand = "load_app_config",
+    SaveAppConfigCommand = "save_app_config",
     TapChangeClipboardCommand = "tap_change_clipboard",
     DeleteRecordCommand = "delete_record",
     ToggleFavoriteRecordCommand = "toggle_favorite_record",
