@@ -14,7 +14,7 @@ env:
   TOOLCHAIN_PROFILE: minimal
 
 jobs:
-  ci:
+  backend-ci:
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +39,13 @@ jobs:
           components: rustfmt, clippy
       - name: Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: install dependencies (ubuntu only)
+        if: matrix.settings.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev libgtk-3-dev
       - name: Run ci
         run: |
           cd src-tauri
