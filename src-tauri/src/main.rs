@@ -39,7 +39,8 @@ fn main() {
             Some(vec![]),
         ))
         .setup(|app| {
-            if cfg!(not(target_os = "linux")) {
+            #[cfg(not(target_os = "linux"))]
+            {
                 let window = app.get_window(MAIN_WINDOW).unwrap();
                 if let Err(err) = window_shadows::set_shadow(&window, true) {
                     error!(
