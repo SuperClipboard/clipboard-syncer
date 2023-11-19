@@ -6,6 +6,7 @@ import RecordCard from "@/components/RecordCard";
 import {RecordDocument} from "@/models/RecordDocument";
 import {listen, UnlistenFn} from "@tauri-apps/api/event";
 import {EventListenerEnum} from "@/utils/consts";
+import "@/css/RecordList.css";
 
 const PageSize = 10;
 
@@ -74,7 +75,7 @@ export default function RecordList(props: RecordListProps) {
         try {
             let allFavoriteResp = await allFavoriteRecords();
             if (!allFavoriteResp || !allFavoriteResp.documents || allFavoriteResp.documents.length <= 0) {
-                message.warning("No favorite records!")
+                console.log("No favorite records!")
             }
             console.debug(`all ${allFavoriteResp.documents.length} favorite items loaded!`);
             setFavoriteRecords(allFavoriteResp.documents);
@@ -86,17 +87,16 @@ export default function RecordList(props: RecordListProps) {
     const fetchRecords = async () => {
         try {
             let res = await getRecordByPage(PageSize, endCursor, [0], props.searchKeyword);
-            console.log(`res: ${res}`);
 
             if (!res || !res.documents || res.documents.length <= 0) {
-                message.warning("No records found!")
+                console.log("No records found!")
                 return;
             }
 
             setHasMore(res.hasNextPage);
             setRecords(records.concat(res.documents));
             setEndCursor(res.endCursor);
-            message.success(`${res.documents.length} more items loaded!`);
+            console.log(`${res.documents.length} more items loaded!`);
         } catch (err) {
             message.error(`load more items failed: ${err}`);
         }
@@ -110,7 +110,7 @@ export default function RecordList(props: RecordListProps) {
         try {
             let res = await getRecordByPage(PageSize, "", [0], props.searchKeyword);
             if (!res || !res.documents || res.documents.length <= 0) {
-                message.warning("No records found!")
+                console.log("No records found!")
                 return;
             }
 
@@ -150,8 +150,7 @@ export default function RecordList(props: RecordListProps) {
 
     return (
         <div id={"record-list-container"}>
-            current keyword: {prevSearchKeywordRef.current}<br/>
-            favorite: {favoriteRecords.length}, normal: {records.length}
+            favorite: {favoriteRecords.length}, current normal: {records.length}
             <div className={"favorite-record-list"}>
                 <InfiniteScroll
                     next={() => {
@@ -175,7 +174,7 @@ export default function RecordList(props: RecordListProps) {
                     hasMore={hasMore}
                     endMessage={
                         <p style={{textAlign: 'center'}}>
-                            <b>No record!</b>
+                            <b className={"normal-record-list-after"}></b>
                         </p>
                     }
                     loader={<h4>Loading...</h4>}

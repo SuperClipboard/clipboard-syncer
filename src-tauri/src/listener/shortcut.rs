@@ -1,18 +1,11 @@
-use anyhow::Result;
+use crate::config::app_config::AppConfig;
+use anyhow::{bail, Result};
 use tauri::{App, GlobalShortcutManager, Manager};
 
 use crate::consts::MAIN_WINDOW;
 
 pub enum ShortcutKeymapEnum {
     ToggleWindow,
-}
-
-impl From<ShortcutKeymapEnum> for &'static str {
-    fn from(value: ShortcutKeymapEnum) -> Self {
-        match value {
-            ShortcutKeymapEnum::ToggleWindow => "CommandOrControl+k",
-        }
-    }
 }
 
 #[derive(Debug, Default)]
@@ -30,14 +23,30 @@ impl ShortcutListener {
         let mut manager = app_handle.global_shortcut_manager();
         let window = app_handle.get_window(MAIN_WINDOW).unwrap();
 
-        manager.register(ShortcutKeymapEnum::ToggleWindow.into(), move || {
-            if window.is_visible().unwrap() {
-                window.hide().unwrap();
-            } else {
-                window.show().unwrap();
-            };
-        })?;
+        manager.register(
+            &Self::get_shortcut_hotkey_config(ShortcutKeymapEnum::ToggleWindow)?,
+            move || {
+                if window.is_visible().unwrap() {
+                    window.hide().unwrap();
+                } else {
+                    window.show().unwrap();
+                };
+            },
+        )?;
 
         Ok(())
+    }
+
+    fn get_shortcut_hotkey_config(shortcut_key: ShortcutKeymapEnum) -> Result<String> {
+        match shortcut_key {
+            ShortcutKeymapEnum::ToggleWindow => {
+                match AppConfig::latest().read().toggle_window_hotkey.clone() {
+                    Some(hotkey) => Ok(hotkey),
+                    None => {
+                        bail!("toggle_window_hotkey not configured!");
+                    }
+                }
+            }
+        }
     }
 }

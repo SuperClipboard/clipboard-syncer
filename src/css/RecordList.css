@@ -1,0 +1,8 @@
+.normal-record-list-after:after {
+    content: "End";
+    display: block;
+    padding: 5px;
+    text-align: center;
+    color: #bbb;
+    font-size: 15px;
+}

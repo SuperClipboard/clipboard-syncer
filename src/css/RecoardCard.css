@@ -5,8 +5,13 @@
     justify-content: space-between;
     align-content: space-between;
     margin: 5px 0 5px 0;
-    border-top: 1px solid rgb(128, 128, 128);
-    border-bottom: 1px solid rgb(128, 128, 128);
+    border-bottom: 1px solid rgb(211, 211, 211);
+    border-radius: 3px;
+}
+
+.RecordCard:hover {
+    background-color: #f5f8fa;
+    transition: background-color 0.3s ease;
 }
 
 .record-card-left {
@@ -28,16 +33,10 @@
 .record-favorite-button {
     text-align: center;
     color: #ffaa00 !important;
-    border-color: #fff !important;
 }
 
-.search-results {
-    margin-top: 10px;
-}
-
-.result-item {
-    padding: 10px;
-    background-color: rgba(200, 200, 200, 0.5);
-    border-radius: 5px;
-    margin-bottom: 10px;
+.record-card-text-container .record-card-text-tooltip {
+    white-space: pre-line;
+    background-color: #ffaa73;
+    color: #222;
 }

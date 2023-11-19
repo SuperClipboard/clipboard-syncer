@@ -32,26 +32,9 @@ impl AppConfig {
                 info!("Config graphql_port changed, need restart the node");
             }
 
-            if patch.record_limit_threshold.is_some()
-                && old_cfg
-                    .record_limit_threshold
-                    .ne(&patch.record_limit_threshold)
-            {
-                info!("config record_limit_threshold changed!");
-            }
-
             if patch.store_limit.is_some() && old_cfg.store_limit.ne(&patch.store_limit) {
                 // todo
                 info!("delete and refresh over-limit store and cache")
-            }
-
-            if patch.sync_server_addr_list.is_some()
-                && old_cfg
-                    .sync_server_addr_list
-                    .ne(&patch.sync_server_addr_list)
-            {
-                // todo
-                info!("re-register add servers")
             }
 
             <Result<()>>::Ok(())
@@ -88,7 +71,6 @@ impl AppConfig {
 mod tests {
     use crate::config::app_config::AppConfig;
     use crate::config::configure::Configure;
-    use std::collections::HashSet;
 
     #[tokio::test]
     async fn test_modify_config() {
@@ -99,8 +81,7 @@ mod tests {
             store_limit: Some(101),
             sync_port: None,
             graphql_port: None,
-            record_limit_threshold: Some(51),
-            sync_server_addr_list: Some(HashSet::from(["127.0.0.1".to_string()])),
+            toggle_window_hotkey: None,
         })
         .await
         .unwrap();

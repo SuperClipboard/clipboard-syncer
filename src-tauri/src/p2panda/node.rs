@@ -5,6 +5,7 @@ use p2panda_rs::entry::decode::decode_entry;
 use p2panda_rs::entry::traits::AsEntry;
 
 use crate::config::app_config::AppConfig;
+use crate::config::configure::{DEFAULT_GRAPHQL_PORT, DEFAULT_SYNC_PORT};
 use crate::consts::SQLITE_FILE;
 use crate::p2panda::graphql::GraphQLHandler;
 use crate::p2panda::key_pair::get_key_pair;
@@ -22,8 +23,8 @@ impl NodeServer {
         let database_uri;
         {
             let config = AppConfig::latest();
-            graphql_port = config.read().graphql_port.clone().unwrap().parse::<u16>()?;
-            sync_port = config.read().sync_port.clone().unwrap().parse::<u16>()?;
+            graphql_port = config.read().graphql_port.unwrap_or(DEFAULT_GRAPHQL_PORT);
+            sync_port = config.read().sync_port.unwrap_or(DEFAULT_SYNC_PORT);
             database_uri = format!(
                 "sqlite://{}",
                 app_data_dir()?.join(SQLITE_FILE).to_str().unwrap()
