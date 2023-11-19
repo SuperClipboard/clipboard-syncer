@@ -48,7 +48,14 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@tauri-apps/cli": "^1.4.0",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
     "customize-cra": "^1.0.0",
-    "react-app-rewired": "^2.2.1"
+    "eslint": "^8.54.0",
+    "eslint-plugin-react": "^7.33.2",
+    "react-app-rewired": "^2.2.1",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "prettier": "^3.1.0"
   }
 }
