@@ -41,24 +41,21 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
+        run: cd src-tauri
         with:
-          command: |
-            cd src-tauri
-            fmt
+          command: fmt
           args: --all -- --check
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
+        run: cd src-tauri
         with:
-          command: |
-            cd src-tauri
-            clippy
+          command: clippy
           args: -- -D warnings
       - name: Run cargo test
         uses: actions-rs/cargo@v1
+        run: cd src-tauri
         env:
           RUST_TEST_THREADS: 8
         with:
-          command: |
-            cd src-tauri
-            test
+          command: test
           args: --all-features
