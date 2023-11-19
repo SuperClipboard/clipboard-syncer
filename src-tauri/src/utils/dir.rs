@@ -1,7 +1,6 @@
 use anyhow::Result;
 use std::fs;
 use std::path::PathBuf;
-use tauri::api::path::home_dir;
 
 const APP_DIR: &str = "clipboard-syncer";
 
@@ -12,7 +11,7 @@ const SECRET_FILE: &str = "secret.txt";
 /// get the app home dir
 pub fn app_home_dir() -> Result<PathBuf> {
     #[cfg(target_os = "windows")]
-    unsafe {
+    {
         use tauri::utils::platform::current_exe;
         let app_exe = current_exe()?;
         let app_exe = dunce::canonicalize(app_exe)?;
@@ -23,7 +22,7 @@ pub fn app_home_dir() -> Result<PathBuf> {
     }
 
     #[cfg(not(target_os = "windows"))]
-    Ok(home_dir()
+    Ok(tauri::api::path::home_dir()
         .ok_or(anyhow::anyhow!("failed to get the app home dir"))?
         .join(".config")
         .join(APP_DIR))
