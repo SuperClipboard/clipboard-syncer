@@ -33,7 +33,7 @@ function RecordCardLeft(props: RecordCardPropsLeft) {
 
     const isImage = props.data.fields.data_type === RecordDataTypeEnum.Image;
 
-    let clickCopy = (_: React.MouseEvent<HTMLDivElement>, record: Record) => {
+    const clickCopy = (_: React.MouseEvent<HTMLDivElement>, record: Record) => {
         console.debug(record);
 
         invoke(CommandEnum.TapChangeClipboardCommand, {
@@ -70,7 +70,7 @@ function RecordCardRight(props: RecordCardPropsRight) {
 
     const [isFavorite, setIsFavorite] = useState(props.data.fields.is_favorite);
 
-    let deleteRecord = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
+    const deleteRecord = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
         // Use documentId to delete the entire document!
         console.debug(`delete record emit view id: ${doc.meta.documentId}`);
 
@@ -81,7 +81,7 @@ function RecordCardRight(props: RecordCardPropsRight) {
         });
     }
 
-    let toggleFavorite = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
+    const toggleFavorite = (_: React.MouseEvent<HTMLElement>, doc: RecordDocument) => {
 
         invoke(CommandEnum.ToggleFavoriteRecordCommand, {
             viewId: doc.meta.viewId,

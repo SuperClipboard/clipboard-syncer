@@ -39,7 +39,7 @@ export async function allFavoriteRecords(): Promise<PageRecordResponse> {
         }`;
 
     try {
-        let resp = await client.request<AllFavoriteRecordsWrapper>(query, {});
+        const resp = await client.request<AllFavoriteRecordsWrapper>(query, {});
         console.debug(resp);
         return resp.favorite_resp;
     } catch (error) {
@@ -107,7 +107,7 @@ async function firstGetRecordByPage(limit: number = 20, favoriteFilter?: Array<n
         }`;
 
     try {
-        let resp = await client.request<PageRecordResponseWrapper>(query, {
+        const resp = await client.request<PageRecordResponseWrapper>(query, {
             limit: limit,
             favorite_filter: favoriteFilter?.toString(),
         });
@@ -163,7 +163,7 @@ export async function otherGetRecordByPage(limit: number = 20, startCursor: stri
         }`;
 
     try {
-        let resp = await client.request<PageRecordResponseWrapper>(query, {
+        const resp = await client.request<PageRecordResponseWrapper>(query, {
             limit: limit,
             start_cursor: startCursor,
         });
@@ -221,7 +221,7 @@ async function firstFilterGetRecordByPage(keyword: string, limit: number = 20): 
         }`;
 
     try {
-        let resp = await client.request<PageRecordResponseWrapper>(query, {
+        const resp = await client.request<PageRecordResponseWrapper>(query, {
             limit: limit,
             keyword: keyword,
         });
@@ -281,7 +281,7 @@ export async function otherFilterGetRecordByPage(keyword: string, startCursor: s
         }`;
 
     try {
-        let resp = await client.request<PageRecordResponseWrapper>(query, {
+        const resp = await client.request<PageRecordResponseWrapper>(query, {
             limit: limit,
             start_cursor: startCursor,
             keyword: keyword,

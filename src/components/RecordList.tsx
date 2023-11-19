@@ -73,7 +73,7 @@ export default function RecordList(props: RecordListProps) {
         setFavoriteRecords([]);
 
         try {
-            let allFavoriteResp = await allFavoriteRecords();
+            const allFavoriteResp = await allFavoriteRecords();
             if (!allFavoriteResp || !allFavoriteResp.documents || allFavoriteResp.documents.length <= 0) {
                 console.log("No favorite records!")
             }
@@ -86,7 +86,7 @@ export default function RecordList(props: RecordListProps) {
 
     const fetchRecords = async () => {
         try {
-            let res = await getRecordByPage(PageSize, endCursor, [0], props.searchKeyword);
+            const res = await getRecordByPage(PageSize, endCursor, [0], props.searchKeyword);
 
             if (!res || !res.documents || res.documents.length <= 0) {
                 console.log("No records found!")
@@ -108,7 +108,7 @@ export default function RecordList(props: RecordListProps) {
         setEndCursor("");
 
         try {
-            let res = await getRecordByPage(PageSize, "", [0], props.searchKeyword);
+            const res = await getRecordByPage(PageSize, "", [0], props.searchKeyword);
             if (!res || !res.documents || res.documents.length <= 0) {
                 console.log("No records found!")
                 return;

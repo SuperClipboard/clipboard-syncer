@@ -5,6 +5,7 @@ import {useNavigate} from 'react-router-dom';
 import {AppConfig} from "@/models/AppConfig";
 import {invoke} from "@tauri-apps/api";
 import {CommandEnum} from "@/utils/consts";
+import { ValidateErrorEntity } from "rc-field-form/lib/interface";
 
 export default function AppSetting() {
 
@@ -36,7 +37,7 @@ export default function AppSetting() {
         }
     };
 
-    const handleSubmitFailed = (errorInfo: any) => {
+    const handleSubmitFailed = (errorInfo: ValidateErrorEntity<AppConfig>) => {
         console.log('Failed:', errorInfo);
     };
 

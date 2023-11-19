@@ -2,8 +2,9 @@ module.exports = {
 
     parser: '@typescript-eslint/parser',
     extends: [
-        'prettier/@typescript-eslint',
-        'plugin:prettier/recommended',
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
     ],
     plugins: ['@typescript-eslint'],
     env: {
