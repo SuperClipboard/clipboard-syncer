@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use app::consts::MAIN_WINDOW;
 use app::p2panda::node::NodeServer;
 use app::tray::register_tray;
 use app::{handler, listener, logger};
@@ -11,7 +10,6 @@ use log::{error, info};
 use tauri::api::notification::Notification;
 use tauri::async_runtime::block_on;
 use tauri::{App, Manager};
-use window_shadows::set_shadow;
 
 fn main() {
     dotenv().ok();
@@ -40,9 +38,10 @@ fn main() {
             Some(vec![]),
         ))
         .setup(|app| {
-            if cfg!(not(target_os = "linux")) {
-                let window = app.get_window(MAIN_WINDOW).unwrap();
-                if let Err(err) = set_shadow(&window, true) {
+            #[cfg(not(target_os = "linux"))]
+            {
+                let window = app.get_window(app::consts::MAIN_WINDOW).unwrap();
+                if let Err(err) = window_shadows::set_shadow(&window, true) {
                     error!(
                         "Set window shadow failed, unsupported platform, error: {}",
                         err
