@@ -39,23 +39,8 @@ jobs:
           components: rustfmt, clippy
       - name: Cache
         uses: Swatinem/rust-cache@v2
-      - name: Run cargo fmt
+      - name: Run ci
         uses: actions-rs/cargo@v1
-        working-directory: src-tauri
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        working-directory: src-tauri
-        with:
-          command: clippy
-          args: -- -D warnings
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        working-directory: src-tauri
-        env:
-          RUST_TEST_THREADS: 8
-        with:
-          command: test
-          args: --all-features
+        run: |
+          cd src-tauri
+          make ci
