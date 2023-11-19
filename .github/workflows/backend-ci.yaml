@@ -17,6 +17,9 @@ jobs:
   lints:
     name: Run cargo fmt and cargo clippy
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src-tauri
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -42,6 +45,9 @@ jobs:
   test:
     name: Run cargo test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src-tauri
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
