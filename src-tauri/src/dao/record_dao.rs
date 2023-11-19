@@ -63,7 +63,7 @@ impl RecordDao {
                 ("content", OperationValue::String(record.content)),
                 (
                     "content_preview",
-                    OperationValue::String(record.content_preview.unwrap_or(String::new())),
+                    OperationValue::String(record.content_preview.unwrap_or_default()),
                 ),
                 ("data_type", OperationValue::String(record.data_type)),
                 ("md5", OperationValue::String(record.md5)),

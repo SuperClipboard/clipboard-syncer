@@ -146,6 +146,7 @@ dependencies = [
  "base64 0.21.5",
  "chrono",
  "dotenv",
+ "dunce",
  "graphql_client",
  "hex",
  "image",
