@@ -14,7 +14,7 @@ env:
   TOOLCHAIN_PROFILE: minimal
 
 jobs:
-  build:
+  ci:
     strategy:
       fail-fast: false
       matrix:
@@ -27,9 +27,6 @@ jobs:
             args: '--verbose'
     name: Run cargo fmt and cargo clippy
     runs-on: ${{ matrix.settings.platform }}
-    defaults:
-      run:
-        working-directory: src-tauri
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -42,6 +39,11 @@ jobs:
           components: rustfmt, clippy
       - name: Cache
         uses: Swatinem/rust-cache@v2
+      - name: Open backend directory
+        run: |
+          ls -la
+          cd ./src-tauri
+          ls -la
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
