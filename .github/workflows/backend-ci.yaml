@@ -14,12 +14,22 @@ env:
   TOOLCHAIN_PROFILE: minimal
 
 jobs:
-  lints:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - platform: 'macos-latest'
+            args: '--verbose --target universal-apple-darwin'
+          - platform: 'ubuntu-latest'
+            args: '--verbose'
+          - platform: 'windows-latest'
+            args: '--verbose'
     name: Run cargo fmt and cargo clippy
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.settings.platform }}
     defaults:
       run:
-        working-directory: src-tauri/
+        working-directory: ./clipboard-syncer/src-tauri/
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -42,23 +52,6 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-  test:
-    name: Run cargo test
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src-tauri/
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: ${{ env.TOOLCHAIN_PROFILE }}
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          override: true
-      - name: Cache
-        uses: Swatinem/rust-cache@v2
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         env:
