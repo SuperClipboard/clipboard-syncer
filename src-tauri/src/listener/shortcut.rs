@@ -3,6 +3,8 @@ use anyhow::{bail, Result};
 use tauri::{App, GlobalShortcutManager, Manager};
 
 use crate::consts::MAIN_WINDOW;
+use crate::handler::process_handler::ProcessHandler;
+use crate::utils::process::get_active_process_id;
 
 pub enum ShortcutKeymapEnum {
     ToggleWindow,
@@ -29,6 +31,7 @@ impl ShortcutListener {
                 if window.is_visible().unwrap() {
                     window.hide().unwrap();
                 } else {
+                    ProcessHandler::set_previous_process_id(get_active_process_id());
                     window.show().unwrap();
                 };
             },

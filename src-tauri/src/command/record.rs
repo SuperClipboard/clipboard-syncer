@@ -1,11 +1,16 @@
+use std::str::FromStr;
+
 use log::{debug, error, info, warn};
 use p2panda_rs::document::DocumentViewId;
 use p2panda_rs::operation::{OperationId, OperationValue};
-use std::str::FromStr;
+use tauri::Manager;
 
+use crate::config::app_config::AppConfig;
+use crate::consts::MAIN_WINDOW;
 use crate::dao::record_dao::RecordDao;
 use crate::handler::global_handler::GlobalHandler;
 use crate::handler::model::MessageTypeEnum;
+use crate::handler::process_handler::ProcessHandler;
 use crate::models::image_data::ImageData;
 use crate::models::record::DataTypeEnum;
 use crate::utils::clipboard::ClipBoardOperator;
@@ -15,12 +20,15 @@ use crate::utils::json;
 #[tauri::command]
 pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<(), String> {
     debug!("got content: {:?} with data_type {:?}", content, data_type);
+
+    let mut success = false;
     if data_type.eq(&String::from(DataTypeEnum::TEXT)) {
         if let Err(e) = ClipBoardOperator::set_text(content) {
             let err_msg = format!("Set text to clipboard err: {}", e);
             error!("{}", err_msg);
             return Err(err_msg);
         };
+        success = true;
     } else if data_type.eq(&String::from(DataTypeEnum::IMAGE)) {
         let image_data = match json::parse::<ImageData>(&content) {
             Ok(image_data) => image_data,
@@ -36,9 +44,26 @@ pub async fn tap_change_clipboard(content: String, data_type: String) -> Result<
             error!("{}", err_msg);
             return Err(err_msg);
         };
+        success = true;
     } else {
         warn!("Unknown data type for the record: {}", data_type)
     };
+
+    if success {
+        if let Some(app_handle) = GlobalHandler::global().app_handle.lock().as_ref() {
+            let window = app_handle.get_window(MAIN_WINDOW).unwrap();
+            if window.is_visible().unwrap() {
+                window.hide().unwrap();
+            }
+            {
+                let config = AppConfig::latest();
+                let config = config.read();
+                if config.auto_paste.unwrap_or(true) {
+                    ProcessHandler::paste_in_previous_window();
+                }
+            }
+        }
+    }
 
     Ok(())
 }

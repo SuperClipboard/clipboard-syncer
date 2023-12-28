@@ -23,6 +23,8 @@ fn main() {
             app::command::record::tap_change_clipboard,
             app::command::record::delete_record,
             app::command::record::toggle_favorite_record,
+            app::command::process::focus_previous_window,
+            app::command::process::paste_in_previous_window,
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _, cwd| {
             Notification::new(&app.config().tauri.bundle.identifier)

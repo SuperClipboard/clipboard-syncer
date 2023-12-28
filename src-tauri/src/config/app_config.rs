@@ -37,6 +37,18 @@ impl AppConfig {
                 info!("delete and refresh over-limit store and cache")
             }
 
+            if patch.mdns_find_others.is_some()
+                && old_cfg.mdns_find_others.ne(&patch.mdns_find_others)
+            {
+                // todo
+                info!("mdns_find_others changed")
+            }
+
+            if patch.auto_paste.is_some() && old_cfg.auto_paste.ne(&patch.auto_paste) {
+                // todo
+                info!("auto_paste changed")
+            }
+
             <Result<()>>::Ok(())
         } {
             Ok(_) => {
@@ -82,6 +94,8 @@ mod tests {
             sync_port: None,
             graphql_port: None,
             toggle_window_hotkey: None,
+            auto_paste: Some(false),
+            mdns_find_others: Some(false),
         })
         .await
         .unwrap();

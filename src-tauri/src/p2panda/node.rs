@@ -21,14 +21,17 @@ impl NodeServer {
         let graphql_port;
         let sync_port;
         let database_uri;
+        let mdns;
         {
             let config = AppConfig::latest();
-            graphql_port = config.read().graphql_port.unwrap_or(DEFAULT_GRAPHQL_PORT);
-            sync_port = config.read().sync_port.unwrap_or(DEFAULT_SYNC_PORT);
+            let config = config.read();
+            graphql_port = config.graphql_port.unwrap_or(DEFAULT_GRAPHQL_PORT);
+            sync_port = config.sync_port.unwrap_or(DEFAULT_SYNC_PORT);
             database_uri = format!(
                 "sqlite://{}",
                 app_data_dir()?.join(SQLITE_FILE).to_str().unwrap()
             );
+            mdns = config.mdns_find_others.unwrap_or(true);
         }
 
         let config = Configuration {
@@ -36,7 +39,7 @@ impl NodeServer {
             http_port: graphql_port,
             network: NetworkConfiguration {
                 quic_port: sync_port,
-                mdns: true,
+                mdns,
                 ..Default::default()
             },
             ..Default::default()

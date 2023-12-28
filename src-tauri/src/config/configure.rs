@@ -20,6 +20,8 @@ pub struct Configure {
     pub sync_port: Option<u16>,
     pub graphql_port: Option<u16>,
     pub toggle_window_hotkey: Option<String>,
+    pub auto_paste: Option<bool>,
+    pub mdns_find_others: Option<bool>,
 }
 
 impl Default for Configure {
@@ -29,6 +31,8 @@ impl Default for Configure {
             sync_port: Some(DEFAULT_SYNC_PORT),
             graphql_port: Some(DEFAULT_GRAPHQL_PORT),
             toggle_window_hotkey: Some(DEFAULT_TOGGLE_WINDOW_HOTKEY.to_string()),
+            auto_paste: Some(true),
+            mdns_find_others: Some(true),
         }
     }
 }
@@ -85,6 +89,8 @@ impl Configure {
         merge!(sync_port);
         merge!(graphql_port);
         merge!(toggle_window_hotkey);
+        merge!(auto_paste);
+        merge!(mdns_find_others);
     }
 }
 
